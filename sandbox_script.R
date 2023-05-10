@@ -3,45 +3,30 @@ library(tiff)
 library(png)
 library(pixmap)
 library(raster)
-library(av)
+library(magick)
+library(cellcount)
 
 # clear environment and free unused memory
 gc()
 
 #Change directories here
-savdir <- ("C:/Users/Tyler.Harman/Desktop/AI_Project/test_images/CSV/")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/AI_Project/test_images/convert_images")
-video_savdir <- ("C:/Users/Tyler.Harman/Desktop/AI_Project/test_images/video_imgs")
-videos <- list.files("C:/Users/Tyler.Harman/Desktop/AI_Project/test_images/test_video/"
-                     , pattern = "", full.name = T)
-video_names <- list.files("C:/Users/Tyler.Harman/Desktop/AI_Project/test_images/test_video/"
-                           , pattern = "", full.name = F)
-
-vidNames <- paste0(video_names)
-vidIndex<-paste0(sub(".mp4", replacement = "", x=vidNames[[1]]))
-vidpath<-file.path(video_savdir,vidIndex)
-if(!dir.exists(vidpath)){
-  dir.create(vidpath)
-}
-av_video_images(videos,destdir=vidpath,format="png")
-
-images <- list.files(vidpath, pattern = "png", full.name = T)
-images_names <- list.files(vidpath, pattern = "png", full.name = F)
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_AccuScope/")
+images <- list.files(img_dir, pattern = "tif", full.name = T)
+images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
 imgNames <- paste0(images_names)
-read_images <- lapply(images, readPNG)
+read_images <- lapply(images, readTIFF)
 img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
-greyscale <- function(x, contrast = 2) {
-  x <- contrast * x
-  x <- x[, , 1] + x[, , 2] + x[, , 3]
-  x <- x / max(x)
-  x <- normalize(x, inputRange = c(0.1, 0.75))
-  return(x)
-}
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 0.2)
 display(grey_imgs[[1]])
+
+#f=array(1,dim=c(3,3))
+#f=f/sum(f)
+#filter_imgs<-filter2(grey_imgs[[1]],f)
+#display(filter_imgs)
+
 binary<-function(x, adj = 0.5) {
   binary_img<- x > adj
   return(binary_img)
@@ -50,26 +35,35 @@ img_neg<-function(x) {
   imgneg<-max(x)-x
   return(imgneg)
 }
-gamma_corr<-function(x) {
-  gamma_img<-(0.2 + x)^3
-  return(gamma_img)
-}
-lp_filter<-function(x,size=31,sigma=5) {
-  w<-makeBrush(size=size,shape="gaussian",sigma = sigma)
-  lp<-filter2(x,w)
-  return(lp)
-}
-lp_imgs<-lapply(grey_imgs, lp_filter, size=51,sigma=1)
-binary_img<-lapply(lp_imgs, binary, adj = 0.55)
-neg_imgs<-lapply(binary_img, img_neg)
-display(neg_imgs[[1]])
-mapped <- function(x, threshold = 0.3) {
-  x <- as.matrix(x)
-  x[x < threshold] <- 0
-  return(x)
-}
-imagesMapped <- lapply(neg_imgs, mapped, threshold = 0.2) #background intensity threshold adjustment
+#lp_imgs<-lapply(grey_imgs, lp_filter, size=51,sigma=1)
+neg_imgs<-lapply(grey_imgs, img_neg)
+display(neg_imgs[[2]])
+binary_img<-lapply(neg_imgs, binary, adj = 0.4)
+display(binary_img[[2]])
 
+imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
+
+img_watershed<-single_cell_convert(imagesMapped[[1]],w=50,h=50,offset=0.001,areathresh=250,tolerance=0.8,ext = 3)
+seed_watershed<-single_cell_convert(imagesMapped[[2]])
+display(img_watershed)
+display(seed_watershed)
+final_img<-count_images(img_watershed,normalize = T, removeEdgeCells = T)
+display(final_img)
+display(st)
+
+
+ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
+cmask<-propagate(neg_imgs[[1]],seeds=seed_watershed,mask=ctmask,lambda = 10^2)
+display(cmask)
+segmented<-paintObjects(cmask,grey_imgs[[1]],col = c('pink','red'))
+display(segmented,all=TRUE)
+st <- stackObjects(img_watershed, cmask)
+display(st)
+
+#max(bwlabel(img_watershed))
+#table(bwlabel(img_watershed))
+#final_img<-count_images(img_watershed,normalize = T, removeEdgeCells = T)
+#display(final_img)
 
 for (z in 1:length(images)) {
   Index<-paste0(sub(".png", replacement = "", x=imgNames[[z]]))
@@ -78,19 +72,20 @@ for (z in 1:length(images)) {
   if(!dir.exists(newpath)){
     dir.create(newpath)
   }
-  image <- thresh(imagesMapped[[z]], w = 17, h = 17, offset = 0.001)
+  image <- thresh(imagesMapped[[1]], w = 50, h = 50, offset = 0.001)
   display(image)
   image1 <- fillHull(image)
   display(image1)
-  image2 <- watershed(distmap(image1), tolerance = 0.5, ext = 1)
+  image2 <- watershed(distmap(image1), tolerance = 0.8, ext = 2) #numbers taken from Anabena
+  display(image2)
   nf<-computeFeatures.shape(image2)
-  nr <- which(nf[, "s.area"] < 0)
+  nr <- which(nf[, "s.area"] < 150)
   image3 <- rmObjects(image2, nr)
   display(image3)
-  features.data<-computeFeatures(image3, grey_imgs[[z]])
+  features.data<-computeFeatures(image3, imagesMapped[[1]])
   features<-as.data.frame(features.data)
   features<-cbind(features,frame_num=NA)
-  st <- stackObjects(image3, imagesMapped[[z]])
+  st <- stackObjects(image3, imagesMapped[[1]])
   for(k in 1:dim(st)[3]) {
     st_img<-st[, , k]
     analyzed_image1<-paste0(sub(".png", replacement = " ", x=imgNames[[z]]),"_frame")
