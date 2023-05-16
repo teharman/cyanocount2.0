@@ -160,7 +160,6 @@ st_blob_test<-Image(st_blob)
 st_blob_test<-st_blob_test[, , 1]
 display(st_blob)
 st_img <- stackObjects(cmask,grey_imgs[[y]])
-display(st_img)
 
 
 ####Create features and export images####
