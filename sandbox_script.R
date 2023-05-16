@@ -39,19 +39,16 @@ img_neg<-function(x) {
 }
 #lp_imgs<-lapply(grey_imgs, lp_filter, size=51,sigma=1)
 neg_imgs<-lapply(grey_imgs, img_neg)
-display(neg_imgs[[2]])
+display(neg_imgs[[1]])
 binary_img<-lapply(neg_imgs, binary, adj = 0.4)
-display(binary_img[[2]])
+display(binary_img[[1]])
 
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
 
 img_watershed<-single_cell_convert(imagesMapped[[1]],w=50,h=50,offset=0.001,areathresh=250,tolerance=0.8,ext = 3)
-seed_watershed<-single_cell_convert(imagesMapped[[2]])
 display(img_watershed)
-display(seed_watershed)
 final_img<-count_images(img_watershed,normalize = T, removeEdgeCells = T)
 display(final_img)
-display(st)
 
 seed.input<-lapply(seed.input,as.numeric)
 seed.input<-as.data.frame(seed.input)

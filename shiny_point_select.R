@@ -23,22 +23,19 @@ create_image <- function(loaded_image, image_data) {
 
 
 
-ui <- fluidPage(
+ui <- fixedPage(
   useShinyjs(),
-  titlePanel(""),
-
-  sidebarLayout(
-    sidebarPanel(
-    ),
-
     mainPanel(
       plotOutput("current_image_plot", dblclick = "double_click", hover = "hover"),
-      actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:252px;font-size:140%',icon=icon("check"),style="display:center-align"),
-      actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:252px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+      h3(" "),
+      actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:290px;font-size:140%',icon=icon("check"),style="display:center-align"),
+      actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:300px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+      h3(" "),
+      h3(" "),
       DT::dataTableOutput('data')
     )
   )
-)
+
 
 server <- function(input, output, session) {
 
@@ -83,4 +80,4 @@ server <- function(input, output, session) {
 }
 
 runGadget(ui, server, viewer = dialogViewer("cellcount Image Analysis Interface",
-                                            width = 800, height = 1800))
+                                            width = 1000, height = 2300))
