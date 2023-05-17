@@ -70,7 +70,7 @@ create_image <- function(loaded_image, image_data) {
   return(displayed_image)
 }
 
-ui <- fixedPage(
+ui1 <- fixedPage(
   useShinyjs(),
   mainPanel(
     plotOutput("current_image_plot", dblclick = "double_click", hover = "hover"),
@@ -83,7 +83,7 @@ ui <- fixedPage(
   )
 )
 
-server <- function(input, output, session) {
+server1 <- function(input, output, session) {
 
   image_data <- shiny::reactiveValues()
   image_data$double_click <- data.frame(x_values=c(NA_real_,NA_real_), y_values = c(NA_real_,NA_real_))
@@ -125,7 +125,7 @@ server <- function(input, output, session) {
 
 }
 
-runGadget(ui, server, viewer = dialogViewer("cellcount Image Analysis Interface",
+runGadget(ui1, server1, viewer = dialogViewer("cellcount Image Analysis Interface",
                                             width = 1000, height = 2300))
 
 ####Seed segmentation####
@@ -156,10 +156,83 @@ display(cmask)
 segmented<-paintObjects(cmask,grey_imgs[[y]],col = c('pink','red'))
 display(segmented,all=TRUE)
 st_blob <- stackObjects(cmask,img_watershed)
-st_blob_test<-Image(st_blob)
-st_blob_test<-st_blob_test[, , 1]
-display(st_blob)
 st_img <- stackObjects(cmask,grey_imgs[[y]])
+st_img_test<-Image(st_img)
+
+
+####Shiny UI to remove certain cells####
+image_num1<<-textConnection('image_num2','wr',local=FALSE)
+
+ui2 <- fluidPage(
+  useShinyjs(),
+  extendShinyjs(text = jscode, functions = c("closeWindow")),
+  sidebarLayout(
+    sidebarPanel(
+      actionButton("previous", "Previous", icon=icon("arrow-left")),
+      actionButton("next", "Next", icon=icon("arrow-right")),
+      h6(" "),
+      h6(" "),
+      textOutput("image_num"),
+      h6(" "),
+      h6(" "),
+      actionButton("run1", "Select Image Removal",class = "btn-success",icon=icon("trash")),
+      h6(" "),
+      h6(" "),
+      actionButton("close", "Close window",class = "btn-danger",icon=icon("check"))
+    ),
+    mainPanel(
+      plotOutput("current_image_plot")
+    )
+  )
+)
+
+server2 <- function(input, output, session) {
+  index <- reactiveVal(1)
+
+  observeEvent(input[["previous"]], {
+    index(max(index()-1, 1))
+  })
+
+  observeEvent(input[["next"]], {
+    index(min(index()+1, dim(st_img_test)[3]))
+  })
+
+  output$current_image_plot <- renderPlot({
+    loaded_image <- magick::image_ggplot(image_read(st_img_test[,,index()]))
+    loaded_image
+  },res=300,width=350,height=350)
+
+  output$image_num<-renderText({
+    paste('Image number: ',index())
+  })
+
+  observeEvent(input$run1, {
+    shinyalert::shinyalert('Enter image numbers for removal',
+                           type='input',callbackR=image_number, showCancelButton = TRUE,
+                           inputPlaceholder = 'Example: 1, 2, 3, 4, 5',
+                           size="m")
+  })
+
+  image_number<-function(value4) {
+    sink(image_num1)
+    save_name<-cat(value4)
+    sink()
+    close(image_num1)
+    image_num2<<-scan(text=image_num2,dec=",")
+  }
+
+  observeEvent(input$close, {
+    js$closeWindow()
+    shinyjs::stopApp()
+  })
+
+}
+
+runGadget(ui2, server2, viewer = dialogViewer("Cell Image Selector",
+                                              width = 800, height = 400))
+
+st_blob_rm<-st_blob[,,-image_num2]
+st_img_rm<-st_img[,,-image_num2]
 
 
 ####Create features and export images####
@@ -170,6 +243,10 @@ features.img<-as.data.frame(features.data.img)
 features.blob1<-cbind(features.blob,frame_num=NA)
 features.img1<-cbind(features.blob,frame_num=NA)
 
+#removal of rows from the shiny_select UI
+features.blob2<-features.blob1 %>%  filter(!row_number() %in% image_num2)
+features.img2<-features.img1 %>% filter(!row_number() %in% image_num2)
+
 #blob st img save
 Index_blob<-paste0(sub(".tif", replacement = "blob_", x=imgNames[[y]]))
 Index1<-paste0(sub(".tif", replacement = "/ ", x=imgNames[[y]]))
@@ -177,16 +254,16 @@ newpath<-file.path(image_savdir,Index1)
 if(!dir.exists(newpath)){
   dir.create(newpath)
 }
-for(k in 1:dim(st_blob)[3]) {
-  st_imgs_blob<-st_blob[, , k]
+for(k in 1:dim(st_blob_rm)[3]) {
+  st_imgs_blob<-st_blob_rm[, , k]
   analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
   analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
   analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_blob_analyzed.tiff")
-  features.blob1$frame_num[k]<-cbind(k)
+  features.blob2$frame_num[k]<-cbind(k)
   writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
 }
 csv_save<-paste0(paste(Index_blob,Sys.Date()),".csv")
-write.csv(features.blob1, paste0(newpath, csv_save)) #Change this CSV file name
+write.csv(features.blob2, paste0(newpath, csv_save)) #Change this CSV file name
 
 #grey st img save
 Index_grey<-paste0(sub(".tif", replacement = "grey_", x=imgNames[[y]]))
@@ -195,16 +272,16 @@ newpath<-file.path(image_savdir,Index1)
 if(!dir.exists(newpath)){
   dir.create(newpath)
 }
-for(k in 1:dim(st_img)[3]) {
-  st_imgs_grey<-st_img[, , k]
+for(k in 1:dim(st_img_rm)[3]) {
+  st_imgs_grey<-st_img_rm[, , k]
   analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
   analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
   analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
-  features.blob1$frame_num[k]<-cbind(k)
+  features.img2$frame_num[k]<-cbind(k)
   writeImage(st_imgs_grey,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
 }
 csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name
+write.csv(features.img2, paste0(newpath, csv_save)) #Change this CSV file name
 
 #
 #
