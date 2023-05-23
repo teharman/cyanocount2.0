@@ -61,12 +61,12 @@ image_select<-function(){
                              size="m")
     })
 
-    onclick("run2",{
+    observeEvent(input[["run2"]], {
       image_number[nrow(image_number) + 1, ] <<- c(index())
     })
 
     image_number<-function(value4) {
-      sink(image_num1)
+      sink(image_num1,0)
       save_name<-cat(value4)
       sink()
       close(image_num1)
