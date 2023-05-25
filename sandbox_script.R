@@ -55,7 +55,82 @@ display(img_watershed)
 
 ####Shiny UI cell selector####
 
-point_select()
+jscode <- "shinyjs.closeWindow = function() { window.close(); }"
+seed.input <<- data.frame(x_axis = numeric(0), y_axis = numeric(0))
+
+create_image <- function(loaded_image, image_data) {
+
+  displayed_image <- loaded_image +
+    geom_point(data = image_data, aes(x = .data$x_values,
+                                      y = .data$y_values)) +
+    geom_path(data = image_data, aes(x = .data$x_values,
+                                     y = .data$y_values
+    ),
+    color = "black")
+  return(displayed_image)
+}
+
+ui1 <- fixedPage(
+  useShinyjs(),
+  mainPanel(
+    plotOutput("current_image_plot", dblclick = "double_click", hover = "hover"),
+    h3(" "),
+    actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:290px;font-size:140%',icon=icon("check"),style="display:center-align"),
+    actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:300px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+    h3(" "),
+    h3(" "),
+    DT::dataTableOutput('data')
+  )
+)
+
+server1 <- function(input, output, session) {
+
+  image_data <- shiny::reactiveValues()
+  image_data$double_click <- data.frame(x_values=c(NA_real_,NA_real_), y_values = c(NA_real_,NA_real_))
+
+  loaded_image <- magick::image_ggplot(image_read(images[[y]]))
+
+  output$current_image_plot <- renderPlot({
+    displayed_image <- create_image(loaded_image,
+                                    image_data$double_click
+    )
+    return(displayed_image)
+  })
+
+  rv <- reactiveVal(seed.input)
+
+  output$data <- DT::renderDataTable ({
+    DT::datatable(rv(), editable = TRUE)
+  })
+
+  observeEvent({input$double_click}, {
+    clickrow <<- data.frame(x_values = input$double_click$x,
+                            y_values = input$double_click$y)
+
+    seed.input[nrow(seed.input) + 1, ] <<- c(clickrow$x_values,clickrow$y_values)
+
+    image_data$double_click[1,] <<- clickrow
+
+  })
+
+  onclick("BRefresh",{
+    proxy=dataTableProxy("data")
+    replaceData(proxy,seed.input)
+  })
+
+  observeEvent(input$close, {
+    js$closeWindow()
+    shinyjs::stopApp()
+  })
+
+  session$onSessionEnded(function() {
+    stopApp()
+  })
+
+}
+
+runGadget(ui1, server1, viewer = dialogViewer("cellcount Image Analysis Interface",
+                                              width = 1000, height = 2300))
 
 ####Seed segmentation####
 seed.input<-lapply(seed.input,as.numeric)
@@ -91,7 +166,82 @@ st_img_test<-Image(st_img)
 
 ####Shiny UI to remove certain cells####
 
-image_select()
+jscode <- "shinyjs.closeWindow = function() { window.close(); }"
+image_number<<-data.frame(img_num=numeric(0))
+image_num1<<-textConnection('image_num2','wr',local=FALSE)
+
+ui2 <- fluidPage(
+  useShinyjs(),
+  extendShinyjs(text = jscode, functions = c("closeWindow")),
+  sidebarLayout(
+    sidebarPanel(
+      actionButton("previous", "Previous", icon=icon("arrow-left")),
+      actionButton("next", "Next", icon=icon("arrow-right")),
+      h6(" "),
+      h6(" "),
+      textOutput("image_num"),
+      h6(" "),
+      h6(" "),
+      actionButton("run1", "Select Image Removal",class = "btn-success",icon=icon("trash")),
+      actionButton("run2", "Select Current Image",class = "btn-success",icon=icon("trash")),
+      h6(" "),
+      h6(" "),
+      actionButton("close", "Close window",class = "btn-danger",icon=icon("check"))
+    ),
+    mainPanel(
+      plotOutput("current_image_plot")
+    )
+  )
+)
+
+server2 <- function(input, output, session) {
+  index <- reactiveVal(1)
+
+  observeEvent(input[["previous"]], {
+    index(max(index()-1, 1))
+  })
+
+  observeEvent(input[["next"]], {
+    index(min(index()+1, dim(st_img_test)[3]))
+  })
+
+  output$current_image_plot <- renderPlot({
+    loaded_image <- magick::image_ggplot(image_read(st_img_test[,,index()]))
+    loaded_image
+  },res=300,width=350,height=350)
+
+  output$image_num<-renderText({
+    paste('Image number: ',index())
+  })
+
+  observeEvent(input$run1, {
+    shinyalert::shinyalert('Enter image numbers for removal',
+                           type='input',callbackR=image_number, showCancelButton = TRUE,
+                           inputPlaceholder = 'Example: 1, 2, 3, 4, 5',
+                           size="m")
+  })
+
+  observeEvent(input[["run2"]], {
+    image_number[nrow(image_number) + 1, ] <<- c(index())
+  })
+
+  image_number<-function(value4) {
+    sink(image_num1,0)
+    save_name<-cat(value4)
+    sink()
+    close(image_num1)
+    image_num2<<-scan(text=image_num2,dec=",")
+  }
+
+  observeEvent(input$close, {
+    js$closeWindow()
+    shinyjs::stopApp()
+  })
+
+}
+
+runGadget(ui2, server2, viewer = dialogViewer("Cell Image Selector",
+                                              width = 800, height = 400))
 
 #Removal of problematic images from output of 'image_select' Shiny UI
 st_blob_rm<-st_blob[,,-image_num2]
