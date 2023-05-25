@@ -29,7 +29,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-3
+y<-1
 
 ####Initial image conversion####
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 0.2)
@@ -70,16 +70,21 @@ create_image <- function(loaded_image, image_data) {
   return(displayed_image)
 }
 
-ui1 <- fixedPage(
+ui1 <- fluidPage(
   useShinyjs(),
+  extendShinyjs(text = jscode, functions = c("closeWindow")),
+  sidebarLayout(
+    sidebarPanel(
+      actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:175px;font-size:140%',icon=icon("check"),style="display:center-align"),
+      actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:175px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+      h3(" "),
+      DT::dataTableOutput('data')
+  ),
   mainPanel(
-    plotOutput("current_image_plot", dblclick = "double_click", hover = "hover"),
+    plotOutput("current_image_plot", dblclick = "double_click", hover = "hover", width = "100%"),
     h3(" "),
-    actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:290px;font-size:140%',icon=icon("check"),style="display:center-align"),
-    actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:300px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
-    h3(" "),
-    h3(" "),
-    DT::dataTableOutput('data')
+    h3(" ")
+  )
   )
 )
 
@@ -95,7 +100,7 @@ server1 <- function(input, output, session) {
                                     image_data$double_click
     )
     return(displayed_image)
-  })
+  }, height=800,width=1000)
 
   rv <- reactiveVal(seed.input)
 
@@ -130,7 +135,7 @@ server1 <- function(input, output, session) {
 }
 
 runGadget(ui1, server1, viewer = dialogViewer("cellcount Image Analysis Interface",
-                                              width = 1000, height = 2300))
+                                              width = 1500, height = 2000))
 
 ####Seed segmentation####
 seed.input<-lapply(seed.input,as.numeric)
@@ -162,7 +167,8 @@ display(segmented,all=TRUE)
 st_blob <- stackObjects(cmask,img_watershed)
 st_img <- stackObjects(cmask,grey_imgs[[y]])
 st_img_test<-Image(st_img)
-
+display(st_blob)
+display(st_img)
 
 ####Shiny UI to remove certain cells####
 
