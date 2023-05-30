@@ -18,8 +18,8 @@ library(DT)
 gc()
 
 ####Change directories/Import images####
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_AccuScope/")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_AccuScope")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_Nikon_TE300/")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_Nikon_TE300")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -29,7 +29,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-1
+y<-5
 
 ####Initial image conversion####
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 0.2)
@@ -45,7 +45,7 @@ img_neg<-function(x) {
 }
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.28)
+binary_img<-lapply(neg_imgs, binary, adj = 0.75)
 display(binary_img[[y]])
 
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
@@ -66,7 +66,10 @@ create_image <- function(loaded_image, image_data) {
     geom_path(data = image_data, aes(x = .data$x_values,
                                      y = .data$y_values
     ),
-    color = "black")
+    color = "black") +
+    geom_point(data=seed.input,aes(x=.data$x_axis,
+                                   y=.data$y_axis),
+               color="red")
   return(displayed_image)
 }
 
@@ -79,12 +82,12 @@ ui1 <- fluidPage(
       actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:175px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
       h3(" "),
       DT::dataTableOutput('data')
-  ),
-  mainPanel(
-    plotOutput("current_image_plot", dblclick = "double_click", hover = "hover", width = "100%"),
-    h3(" "),
-    h3(" ")
-  )
+    ),
+    mainPanel(
+      plotOutput("current_image_plot", dblclick = "double_click", hover = "hover", width = "100%"),
+      h3(" "),
+      h3(" ")
+    )
   )
 )
 
@@ -93,7 +96,7 @@ server1 <- function(input, output, session) {
   image_data <- shiny::reactiveValues()
   image_data$double_click <- data.frame(x_values=c(NA_real_,NA_real_), y_values = c(NA_real_,NA_real_))
 
-  loaded_image <- magick::image_ggplot(image_read(images[[y]]))
+  loaded_image <- magick::image_ggplot(image_modulate(image_read(images[[y]]),brightness=1000))
 
   output$current_image_plot <- renderPlot({
     displayed_image <- create_image(loaded_image,
@@ -141,16 +144,16 @@ runGadget(ui1, server1, viewer = dialogViewer("cellcount Image Analysis Interfac
 seed.input<-lapply(seed.input,as.numeric)
 seed.input<-as.data.frame(seed.input)
 seed.input<-round(seed.input,0)
-seed.mtx<-circle_matrix(1280,1024,c(seed.input[1,1]),c(seed.input[1,2]),5,f=1)
+seed.mtx<-circle_matrix(2688,2200,c(seed.input[1,1]),c(seed.input[1,2]),5,f=1)
 
 for (j in 2:nrow(seed.input)){
-  S1.mtx<-circle_matrix(1280,1024,c(seed.input[j,1]),c(seed.input[j,2]),5,f=1)
+  S1.mtx<-circle_matrix(2688,2200,c(seed.input[j,1]),c(seed.input[j,2]),5,f=1)
   point.select<-which(S1.mtx==1,arr.ind = TRUE)
   point.select<-as.data.frame(point.select)
   seed.mtx[ as.matrix(point.select) ] <- 1
 }
 
-seed.mtx<-seed.mtx[,c(1024:1),drop = FALSE]
+seed.mtx<-seed.mtx[,c(2200:1),drop = FALSE]
 
 display(seed.mtx)
 
@@ -189,7 +192,6 @@ ui2 <- fluidPage(
       h6(" "),
       h6(" "),
       actionButton("run1", "Select Image Removal",class = "btn-success",icon=icon("trash")),
-      actionButton("run2", "Select Current Image",class = "btn-success",icon=icon("trash")),
       h6(" "),
       h6(" "),
       actionButton("close", "Close window",class = "btn-danger",icon=icon("check"))
