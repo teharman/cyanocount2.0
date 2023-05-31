@@ -29,12 +29,20 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-3
+y<-1
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
 width<-dim(img_transposed[[y]])[1]
 width<-as.numeric(width)
+
+#Separate blue channel from input images
+#b.imgs.test<-Image(img_transposed[[y]],colormode = Color)
+#display(b.imgs.test[[y]][,,3])
+#blue.channel.imgs<-b.imgs.test[[y]][, , 3]
+#
+#bg.img.test<-rgbImage(,b.imgs.test,b.imgs.test)
+#display(bg.img.test)
 
 ####Initial image conversion####
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 0.2)
