@@ -37,8 +37,8 @@ width<-dim(img_transposed[[y]])[1]
 width<-as.numeric(width)
 
 #Separate blue channel from input images
-#b.imgs.test<-Image(img_transposed[[y]],colormode = Color)
-#display(b.imgs.test[[y]][,,3])
+rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
+#display(rgb.imgs.test)
 #blue.channel.imgs<-b.imgs.test[[y]][, , 3]
 #
 #bg.img.test<-rgbImage(,b.imgs.test,b.imgs.test)
@@ -182,7 +182,7 @@ display(cmask)
 segmented<-paintObjects(cmask,grey_imgs[[y]],col = c('pink','red'))
 display(segmented,all=TRUE)
 st_blob <- stackObjects(cmask,img_watershed)
-st_img <- stackObjects(cmask,grey_imgs[[y]])
+st_img <- stackObjects(cmask,rgb.imgs)
 st_img_test<-Image(st_img)
 display(st_blob)
 display(st_img)
@@ -224,11 +224,11 @@ server2 <- function(input, output, session) {
   })
 
   observeEvent(input[["next"]], {
-    index(min(index()+1, dim(st_img_test)[3]))
+    index(min(index()+1, dim(st_img_test)[4]))
   })
 
   output$current_image_plot <- renderPlot({
-    loaded_image <- magick::image_ggplot(image_read(st_img_test[,,index()]))
+    loaded_image <- magick::image_ggplot(image_read(st_img_test[,,,index()]))
     loaded_image
   },res=300,width=350,height=350)
 
@@ -265,12 +265,12 @@ server2 <- function(input, output, session) {
 runGadget(ui2, server2, viewer = dialogViewer("Cell Image Selector",
                                               width = 800, height = 400))
 
-remove_images<-c('FALSE')
+remove_images<-c('TRUE')
 
 if(remove_images == 'TRUE'){
   #Removal of problematic images from output of 'image_select' Shiny UI
   st_blob_rm<-st_blob[,,-image_num2]
-  st_img_rm<-st_img[,,-image_num2]
+  st_img_rm<-st_img[,,,-image_num2]
 
   ####Create features and export images####
   features.data.blob<-computeFeatures(cmask,img_watershed)
@@ -309,13 +309,13 @@ if(remove_images == 'TRUE'){
   if(!dir.exists(newpath)){
     dir.create(newpath)
   }
-  for(k in 1:dim(st_img_rm)[3]) {
-    st_imgs_grey<-st_img_rm[, , k]
+  for(k in 1:dim(st_img_rm)[4]) {
+    st_imgs_color<-st_img_rm[, , , k]
     analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
     analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
     analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
     features.img2$frame_num[k]<-cbind(k)
-    writeImage(st_imgs_grey,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
+    writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
   csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
   write.csv(features.img2, paste0(newpath, csv_save)) #Change this CSV file name
@@ -353,13 +353,13 @@ if(remove_images == 'TRUE'){
   if(!dir.exists(newpath)){
     dir.create(newpath)
   }
-  for(k in 1:dim(st_img)[3]) {
-    st_imgs_grey<-st_img[, , k]
+  for(k in 1:dim(st_img)[4]) {
+    st_imgs_color<-st_img[, , , k]
     analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
     analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
     analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
     features.img1$frame_num[k]<-cbind(k)
-    writeImage(st_imgs_grey,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
+    writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
   csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
   write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name

@@ -4,10 +4,10 @@
 #'
 
 save_data<-function(img_num=y,remove_images='TRUE'){
-if(remove_images == 'TRUE'){
+  if(remove_images == 'TRUE'){
     #Removal of problematic images from output of 'image_select' Shiny UI
     st_blob_rm<-st_blob[,,-image_num2]
-    st_img_rm<-st_img[,,-image_num2]
+    st_img_rm<-st_img[,,,-image_num2]
 
     ####Create features and export images####
     features.data.blob<-computeFeatures(cmask,img_watershed)
@@ -46,13 +46,13 @@ if(remove_images == 'TRUE'){
     if(!dir.exists(newpath)){
       dir.create(newpath)
     }
-    for(k in 1:dim(st_img_rm)[3]) {
-      st_imgs_grey<-st_img_rm[, , k]
+    for(k in 1:dim(st_img_rm)[4]) {
+      st_imgs_color<-st_img_rm[, , , k]
       analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
       analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
       analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
       features.img2$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_grey,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
+      writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
     }
     csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
     write.csv(features.img2, paste0(newpath, csv_save)) #Change this CSV file name
@@ -90,13 +90,13 @@ if(remove_images == 'TRUE'){
     if(!dir.exists(newpath)){
       dir.create(newpath)
     }
-    for(k in 1:dim(st_img)[3]) {
-      st_imgs_grey<-st_img[, , k]
+    for(k in 1:dim(st_img)[4]) {
+      st_imgs_color<-st_img[, , , k]
       analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
       analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
       analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
       features.img1$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_grey,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
+      writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
     }
     csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
     write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name
