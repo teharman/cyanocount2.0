@@ -18,8 +18,8 @@ library(DT)
 gc()
 
 ####Change directories/Import images####
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_AccuScope/")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/version_2/5_4_demo/NZ_Anabena/40x_AccuScope/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_20x/")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_20x//")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -38,15 +38,35 @@ width<-as.numeric(width)
 
 #Separate blue channel from input images
 rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
-#display(rgb.imgs.test)
+display(rgb.imgs)
 #blue.channel.imgs<-b.imgs.test[[y]][, , 3]
 #
 #bg.img.test<-rgbImage(,b.imgs.test,b.imgs.test)
 #display(bg.img.test)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale, contrast = 0.2)
+greyscale <- function(x, contrast = 2,
+                      brightness=0.5,increase=TRUE) {
+  if(increase == 'TRUE'){
+    x <- x * contrast
+    x <- x + brightness
+    x <- x[, , 1] + x[, , 2] + x[, , 3]
+    x <- x / max(x)
+    x <- normalize(x, inputRange = c(0.1, 0.75))
+    return(x)
+  }else{
+    x <- x * contrast
+    x <- x - brightness
+    x <- x[, , 1] + x[, , 2] + x[, , 3]
+    x <- x / max(x)
+    x <- normalize(x, inputRange = c(0.1, 0.75))
+    return(x)
+  }
+}
+grey_imgs<-lapply(img_transposed, greyscale, contrast = 1,
+                  brightness = 0.4, increase=FALSE)
 display(grey_imgs[[y]])
+
 
 binary<-function(x, adj = 0.5) {
   binary_img<- x > adj
@@ -63,7 +83,7 @@ display(binary_img[[y]])
 
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
 
-img_watershed<-single_cell_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=250,tolerance=0.8,ext = 3)
+img_watershed<-single_cell_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=50,tolerance=0.8,ext = 3)
 display(img_watershed)
 
 ####Shiny UI cell selector####
