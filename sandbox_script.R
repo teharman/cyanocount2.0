@@ -18,8 +18,8 @@ library(DT)
 gc()
 
 ####Change directories/Import images####
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_20x/")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_20x//")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_40x/")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_40x/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -29,7 +29,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-1
+y<-2
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -64,7 +64,7 @@ greyscale <- function(x, contrast = 2,
   }
 }
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 1,
-                  brightness = 0.4, increase=FALSE)
+                  brightness = 0.1, increase=FALSE)
 display(grey_imgs[[y]])
 
 
@@ -78,12 +78,35 @@ img_neg<-function(x) {
 }
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.35)
+binary_img<-lapply(neg_imgs, binary, adj = 0.2)
 display(binary_img[[y]])
 
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
 
-img_watershed<-single_cell_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=50,tolerance=0.8,ext = 3)
+watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
+  if (removeEdgeCells == TRUE){
+    image <- thresh(x, w = w, h = h, offset = offset)
+    image1 <- fillHull(image)
+    image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+    nf <- computeFeatures.shape(image2)
+    nr <- which(nf[, "s.area"] < areathresh)
+    image3 <- rmObjects(image2, nr)
+    dims <- dim(image3)
+    border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
+    ids <- unique(border1[which(border1 != 0)])
+    inner <- rmObjects(image3, ids)
+    return(inner)
+  } else{
+    image <- thresh(x, w = w, h = h, offset = offset)
+    image1 <- fillHull(image)
+    image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+    nf <- computeFeatures.shape(image2)
+    nr <- which(nf[, "s.area"] < areathresh)
+    image3 <- rmObjects(image2, nr)
+    return(image3)
+  }
+}
+img_watershed<-watershed_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=50,tolerance=0.8,ext = 3,removeEdgeCells=TRUE)
 display(img_watershed)
 
 ####Shiny UI cell selector####
@@ -106,16 +129,20 @@ create_image <- function(loaded_image, image_data) {
   return(displayed_image)
 }
 
+myImgResource<-('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_Logo.png')
+
 ui1 <- fluidPage(
   useShinyjs(),
   extendShinyjs(text = jscode, functions = c("closeWindow")),
   sidebarLayout(
     sidebarPanel(
-      actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:175px;font-size:140%',icon=icon("check"),style="display:center-align"),
-      actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:175px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+      plotOutput("logo_img",width="75%",height="75%"),
+      h6(" "),
+      actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:245px;font-size:140%',icon=icon("check"),style="display:center-align"),
+      actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:245px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
       h3(" "),
-      DT::dataTableOutput('data')
-    ),
+      DT::dataTableOutput('data'),
+    width=4),
     mainPanel(
       plotOutput("current_image_plot", dblclick = "double_click", hover = "hover", width = "100%"),
       h3(" "),
@@ -129,8 +156,13 @@ server1 <- function(input, output, session) {
   image_data <- shiny::reactiveValues()
   image_data$double_click <- data.frame(x_values=c(NA_real_,NA_real_), y_values = c(NA_real_,NA_real_))
 
-  loaded_image <- magick::image_ggplot(image_modulate(image_read(images[[y]]),#brightness=1000
-                                                      ))
+  loaded_image <- magick::image_ggplot(image_modulate(image_read(images[[y]])))
+  loaded_logo <- magick::image_ggplot(image_modulate(image_read(myImgResource)))
+
+  output$logo_img<-renderPlot({
+    loaded_logo
+    return(loaded_logo)
+  }, height=150,width=500)
 
   output$current_image_plot <- renderPlot({
     displayed_image <- create_image(loaded_image,
@@ -171,8 +203,8 @@ server1 <- function(input, output, session) {
 
 }
 
-runGadget(ui1, server1, viewer = dialogViewer("cellcount Image Analysis Interface",
-                                              width = 1500, height = 2000))
+runGadget(ui1, server1, viewer = dialogViewer("CyanoSCOPE Cell-Select Interface",
+                                              width = 1700, height = 2000))
 
 ####Seed segmentation####
 seed.input<-lapply(seed.input,as.numeric)
@@ -212,12 +244,15 @@ display(st_img)
 jscode <- "shinyjs.closeWindow = function() { window.close(); }"
 image_number<<-data.frame(img_num=numeric(0))
 image_num1<<-textConnection('image_num2','wr',local=FALSE)
+myImgResource<-('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_Logo.png')
 
 ui2 <- fluidPage(
   useShinyjs(),
   extendShinyjs(text = jscode, functions = c("closeWindow")),
   sidebarLayout(
     sidebarPanel(
+      plotOutput("logo_img",width="75%",height="75%"),
+      h6(" "),
       actionButton("previous", "Previous", icon=icon("arrow-left")),
       actionButton("next", "Next", icon=icon("arrow-right")),
       h6(" "),
@@ -228,16 +263,23 @@ ui2 <- fluidPage(
       actionButton("run1", "Select Image Removal",class = "btn-success",icon=icon("trash")),
       h6(" "),
       h6(" "),
-      actionButton("close", "Close window",class = "btn-danger",icon=icon("check"))
+      actionButton("close", "Close window",class = "btn-danger",icon=icon("check")),
+    width=4)
     ),
-    mainPanel(
-      plotOutput("current_image_plot")
-    )
+  mainPanel(
+    plotOutput("current_image_plot")
   )
 )
 
 server2 <- function(input, output, session) {
   index <- reactiveVal(1)
+
+  loaded_logo <- magick::image_ggplot(image_modulate(image_read(myImgResource)))
+
+  output$logo_img<-renderPlot({
+    loaded_logo
+    return(loaded_logo)
+  }, height=100,width=200)
 
   observeEvent(input[["previous"]], {
     index(max(index()-1, 1))
@@ -282,7 +324,7 @@ server2 <- function(input, output, session) {
 
 }
 
-runGadget(ui2, server2, viewer = dialogViewer("Cell Image Selector",
+runGadget(ui2, server2, viewer = dialogViewer("CyanoSCOPE Cell Image Selector",
                                               width = 800, height = 400))
 
 remove_images<-c('TRUE')
@@ -323,7 +365,7 @@ if(remove_images == 'TRUE'){
   write.csv(features.blob2, paste0(newpath, csv_save)) #Change this CSV file name
 
   #grey st img save
-  Index_grey<-paste0(sub(".tif", replacement = "grey_", x=imgNames[[y]]))
+  Index_grey<-paste0(sub(".tif", replacement = "color_", x=imgNames[[y]]))
   Index1<-paste0(sub(".tif", replacement = "/ ", x=imgNames[[y]]))
   newpath<-file.path(image_savdir,Index1)
   if(!dir.exists(newpath)){
@@ -367,7 +409,7 @@ if(remove_images == 'TRUE'){
   write.csv(features.blob1, paste0(newpath, csv_save)) #Change this CSV file name
 
   #grey st img save
-  Index_grey<-paste0(sub(".tif", replacement = "grey_", x=imgNames[[y]]))
+  Index_grey<-paste0(sub(".tif", replacement = "color_", x=imgNames[[y]]))
   Index1<-paste0(sub(".tif", replacement = "/ ", x=imgNames[[y]]))
   newpath<-file.path(image_savdir,Index1)
   if(!dir.exists(newpath)){
