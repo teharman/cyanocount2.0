@@ -29,7 +29,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-2
+y<-4
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -264,10 +264,10 @@ ui2 <- fluidPage(
       h6(" "),
       h6(" "),
       actionButton("close", "Close window",class = "btn-danger",icon=icon("check")),
-    width=4)
-    ),
-  mainPanel(
-    plotOutput("current_image_plot")
+    width=4),
+    mainPanel(
+      plotOutput("current_image_plot")
+    )
   )
 )
 
