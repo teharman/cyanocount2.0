@@ -18,8 +18,8 @@ library(DT)
 gc()
 
 ####Change directories/Import images####
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_40x/")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Anabena_NZ/AccuScope_40x/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Planktothrix/AccuScope_20x/")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Planktothrix/AccuScope_20x/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -29,7 +29,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-4
+y<-10
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -45,8 +45,8 @@ display(rgb.imgs)
 #display(bg.img.test)
 
 ####Initial image conversion####
-greyscale <- function(x, contrast = 2,
-                      brightness=0.5,increase=TRUE) {
+greyscale <- function(x, contrast = 1,
+                      brightness=0.1,increase=TRUE) {
   if(increase == 'TRUE'){
     x <- x * contrast
     x <- x + brightness
@@ -64,7 +64,7 @@ greyscale <- function(x, contrast = 2,
   }
 }
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 1,
-                  brightness = 0.1, increase=FALSE)
+                  brightness = 0.3, increase=FALSE)
 display(grey_imgs[[y]])
 
 
@@ -78,7 +78,7 @@ img_neg<-function(x) {
 }
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.2)
+binary_img<-lapply(neg_imgs, binary, adj = 0.4)
 display(binary_img[[y]])
 
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
@@ -106,7 +106,7 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
     return(image3)
   }
 }
-img_watershed<-watershed_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=50,tolerance=0.8,ext = 3,removeEdgeCells=TRUE)
+img_watershed<-watershed_convert(imagesMapped[[y]],w=17,h=17,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
 display(img_watershed)
 
 ####Shiny UI cell selector####
@@ -327,7 +327,7 @@ server2 <- function(input, output, session) {
 runGadget(ui2, server2, viewer = dialogViewer("CyanoSCOPE Cell Image Selector",
                                               width = 800, height = 400))
 
-remove_images<-c('TRUE')
+remove_images<-c('FALSE')
 
 if(remove_images == 'TRUE'){
   #Removal of problematic images from output of 'image_select' Shiny UI
