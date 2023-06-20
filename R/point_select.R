@@ -22,16 +22,20 @@ point_select<-function(){
     return(displayed_image)
   }
 
+  myImgResource<-('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_Logo.png')
+
   ui1 <- fluidPage(
     useShinyjs(),
     extendShinyjs(text = jscode, functions = c("closeWindow")),
     sidebarLayout(
       sidebarPanel(
-        actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:175px;font-size:140%',icon=icon("check"),style="display:center-align"),
-        actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:175px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+        plotOutput("logo_img",width="75%",height="75%"),
+        h6(" "),
+        actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:245px;font-size:140%',icon=icon("check"),style="display:center-align"),
+        actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:245px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
         h3(" "),
-        DT::dataTableOutput('data')
-      ),
+        DT::dataTableOutput('data'),
+        width=4),
       mainPanel(
         plotOutput("current_image_plot", dblclick = "double_click", hover = "hover", width = "100%"),
         h3(" "),
@@ -45,7 +49,13 @@ point_select<-function(){
     image_data <- shiny::reactiveValues()
     image_data$double_click <- data.frame(x_values=c(NA_real_,NA_real_), y_values = c(NA_real_,NA_real_))
 
-    loaded_image <- magick::image_ggplot(image_modulate(image_read(images[[y]]),brightness=1000))
+    loaded_image <- magick::image_ggplot(image_modulate(image_read(rgb.imgs)))
+    loaded_logo <- magick::image_ggplot(image_modulate(image_read(myImgResource)))
+
+    output$logo_img<-renderPlot({
+      loaded_logo
+      return(loaded_logo)
+    }, height=150,width=500)
 
     output$current_image_plot <- renderPlot({
       displayed_image <- create_image(loaded_image,
@@ -86,6 +96,6 @@ point_select<-function(){
 
   }
 
-  runGadget(ui1, server1, viewer = dialogViewer("cellcount Image Analysis Interface",
-                                                width = 1500, height = 2000))
+  runGadget(ui1, server1, viewer = dialogViewer("CyanoSCOPE Cell-Select Interface",
+                                                width = 1700, height = 2000))
 }

@@ -5,8 +5,26 @@
 #' cell segmentation.
 #'
 
-img_process<-function(img_num=y,contrast_adj=0.2,thresh_adj=0.28,w=50,h=50,offset=0.001,area_thresh=250,tolerance=0.8,ext=3){
-  grey_imgs<-lapply(img_transposed, greyscale, contrast = contrast_adj)
+img_process<-function(img_num=1,contrast_adj=0.2,bright_adj=0.1,increase=TRUE,thresh_adj=0.28,w=50,h=50,offset=0.001,area_thresh=250,tolerance=0.8,ext=3){
+  greyscale <- function(x, contrast = 1,
+                        brightness=0.1,increaseTF=TRUE) {
+    if(increase == 'TRUE'){
+      x <- x * contrast
+      x <- x + brightness
+      x <- x[, , 1] + x[, , 2] + x[, , 3]
+      x <- x / max(x)
+      x <- normalize(x, inputRange = c(0.1, 0.75))
+      return(x)
+    }else{
+      x <- x * contrast
+      x <- x - brightness
+      x <- x[, , 1] + x[, , 2] + x[, , 3]
+      x <- x / max(x)
+      x <- normalize(x, inputRange = c(0.1, 0.75))
+      return(x)
+    }
+  }
+  grey_imgs<-lapply(img_transposed, greyscale, contrast = contrast_adj,brightness=bright_adj,increaseTF=increase)
   display(grey_imgs[[img_num]])
 
   binary<-function(x, adj = 0.5) {
