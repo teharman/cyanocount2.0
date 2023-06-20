@@ -18,18 +18,18 @@ library(DT)
 gc()
 
 ####Change directories/Import images####
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Planktothrix/AccuScope_20x/")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Planktothrix/AccuScope_20x/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/OMAX/Anabena_NZ/40x/batch1")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/OMAX/Anabena_NZ/40x/batch1")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
 imgNames <- paste0(images_names)
-read_images <- lapply(images, readTIFF)
+read_images <- lapply(images, readImage)
 img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-10
+y<-1
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -64,7 +64,7 @@ greyscale <- function(x, contrast = 1,
   }
 }
 grey_imgs<-lapply(img_transposed, greyscale, contrast = 1,
-                  brightness = 0.3, increase=FALSE)
+                  brightness = 0.7, increase=FALSE)
 display(grey_imgs[[y]])
 
 
@@ -106,7 +106,7 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
     return(image3)
   }
 }
-img_watershed<-watershed_convert(imagesMapped[[y]],w=17,h=17,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+img_watershed<-watershed_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
 display(img_watershed)
 
 ####Shiny UI cell selector####
@@ -156,7 +156,7 @@ server1 <- function(input, output, session) {
   image_data <- shiny::reactiveValues()
   image_data$double_click <- data.frame(x_values=c(NA_real_,NA_real_), y_values = c(NA_real_,NA_real_))
 
-  loaded_image <- magick::image_ggplot(image_modulate(image_read(images[[y]])))
+  loaded_image <- magick::image_ggplot(image_modulate(image_read(rgb.imgs)))
   loaded_logo <- magick::image_ggplot(image_modulate(image_read(myImgResource)))
 
   output$logo_img<-renderPlot({
@@ -327,7 +327,7 @@ server2 <- function(input, output, session) {
 runGadget(ui2, server2, viewer = dialogViewer("CyanoSCOPE Cell Image Selector",
                                               width = 800, height = 400))
 
-remove_images<-c('FALSE')
+remove_images<-c('TRUE')
 
 if(remove_images == 'TRUE'){
   #Removal of problematic images from output of 'image_select' Shiny UI
@@ -375,7 +375,7 @@ if(remove_images == 'TRUE'){
     st_imgs_color<-st_img_rm[, , , k]
     analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
     analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
+    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_color_analyzed.tiff")
     features.img2$frame_num[k]<-cbind(k)
     writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
@@ -419,7 +419,7 @@ if(remove_images == 'TRUE'){
     st_imgs_color<-st_img[, , , k]
     analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
     analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_grey_analyzed.tiff")
+    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_color_analyzed.tiff")
     features.img1$frame_num[k]<-cbind(k)
     writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
