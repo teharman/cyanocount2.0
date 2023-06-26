@@ -73,8 +73,8 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Anabena/40X/Raw_Imgs/Batch_2")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Anabena/40X/Raw_Imgs/Batch_2")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_5")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_5")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -84,7 +84,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-1
+y<-10
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -96,7 +96,7 @@ rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 display(rgb.imgs)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 1, brightness = 0.45, increase=FALSE)
+grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 1, brightness = 0.35, increase=FALSE)
 display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
@@ -234,3 +234,4 @@ if(remove_images == 'TRUE'){
   csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
   write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name
 }
+
