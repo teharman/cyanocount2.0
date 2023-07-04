@@ -73,8 +73,8 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_5")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_5")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_6")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_6")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
