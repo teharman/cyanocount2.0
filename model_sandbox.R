@@ -8,7 +8,7 @@ library(tensorflow)
 library(tidyverse)
 library(fs)
 #__________________________________________________________________________
-
+####old model####
 setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model")
 
 model_label<-dir("Train/")
