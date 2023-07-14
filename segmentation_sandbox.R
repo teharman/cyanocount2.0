@@ -10,7 +10,7 @@ library(fs)
 library(tibble)
 library(tfdatasets)
 #__________________________________________________________________________
-
+setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model')
 data_dir<-path("pets_dataset")
 dir_create<-data_dir
 
@@ -130,3 +130,38 @@ target_model<-get_model(img_size = img_size, num_classes = 3)
 
 target_model
 
+target_model %>%
+  compile(optimizer="rmsprop",
+          loss="sparse_categorical_crossentropy")
+
+callbacks<- list(
+  callback_model_checkpoint("oxford_segmentation.keras",
+                            save_best_only = TRUE))
+
+history<-target_model%>% fit(
+  train_dataset,
+  epochs=50,
+  callbacks=callbacks,
+  validation_data=validation_dataset
+)
+
+plot(history)
+
+best_model<-load_model_tf("oxford_segmentation.keras")
+
+save_model_tf(best_model,"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/segmentation_model/")
+
+test_image<-val_paths$input[109] %>%
+  tf_read_image_and_resize("jpeg",channels=3L)
+
+predicted_mask_probs<-
+  best_model(test_image[tf$newaxis, , , ])
+
+predicted_mask<-
+  tf$argmax(predicted_mask_probs, axis = -1L)
+
+predicted_target <- predicted_mask + 1
+
+par(mfrow = c(1,2))
+display_image_tensor(test_image)
+display_target_sensor(predicted_target)
