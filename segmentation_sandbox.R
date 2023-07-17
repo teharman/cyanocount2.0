@@ -8,160 +8,137 @@ library(tensorflow)
 library(tidyverse)
 library(fs)
 library(tibble)
+library(rsample)
 library(tfdatasets)
-#__________________________________________________________________________
-setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model')
-data_dir<-path("pets_dataset")
-dir_create<-data_dir
+library(unet)
+#______________________________________________________________________________#
+setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/')
+data_dir<-path("segmentation_model/")
 
-data_url<-path("http://www.robots.ox.ac.uk/~vgg/data/pets/data")
-for(filename in c ("images.tar.gz", "annotations.tar.gz")) {
-#  download.file(url = data_url / filename,
-#                destfile = data_dir / filename)
-  untar(data_dir/ filename, exdir = data_dir)
-}
+input_dir<-data_dir / "input_imgs"
+target_dir<-data_dir / "true_mask"
 
-input_dir<-data_dir / "images"
-target_dir<-data_dir / "annotations/trimaps/"
+model <- unet(input_shape = c(384, 384, 3))
 
-image_paths<-tibble::tibble(
-  input = sort(dir_ls(input_dir,glob="*.jpg")),
-  target = sort(dir_ls(target_dir,glob="*.png"))
+images <- tibble(
+  img = list.files(input_dir, full.names = TRUE),
+  mask = list.files(target_dir, full.names = TRUE)
 )
 
-tibble::glimpse(image_paths)
-
-display_image_tensor<-function(x,...,max=255,
-                               plot_margins = c(0,0,0,0)) {
-  if(!is.null(plot_margins))
-    par(mar = plot_margins)
-
-  x %>%
-    as.array() %>%
-    drop() %>%
-    as.raster(max=max) %>%
-    plot(..., interpolate=FALSE)
-}
-
-image_tensor<-image_paths$input[10] %>%
-  tf$io$read_file() %>%
-  tf$io$decode_jpeg()
-
-str(image_tensor)
-
-display_image_tensor(image_tensor)
-
-display_target_sensor<-function(target)
-  display_image_tensor(target - 1, max=2)
-
-target<-image_paths$target[10] %>%
-  tf$io$read_file() %>%
-  tf$io$decode_png()
-
-str(target)
-
-display_target_sensor(target)
-
-tf_read_image<-function(path, format="image", resize=NULL,...) {
-  img<-path %>%
-    tf$io$read_file() %>%
-    tf$io[[paste0("decode_", format)]](...)
-  if (!is.null(resize))
-    img <- img %>%
-      tf$image$resize(as.integer(resize))
-
-  img
-}
-
-img_size<-c(200,200)
-
-tf_read_image_and_resize<-function(..., resize = img_size)
-  tf_read_image(..., resize=resize)
-
-make_dataset<-function(paths_df){
-  tensor_slices_dataset(paths_df) %>%
-    dataset_map(function(path){
-      image<-path$input %>%
-        tf_read_image_and_resize("jpeg", channels = 3L)
-      target<-path$target %>%
-        tf_read_image_and_resize("png", channels = 1L)
-      target<-target-1
-      list(image,target)
-    }) %>%
-    dataset_cache() %>%
-    dataset_shuffle(buffer_size = nrow(paths_df)) %>%
-    dataset_batch(32)
-}
-
-num_val_samples<-1000
-val_idx<-sample.int(nrow(image_paths), num_val_samples)
-
-val_paths<-image_paths[val_idx, ]
-train_paths<-image_paths[-val_idx, ]
-
-validation_dataset<-make_dataset(val_paths)
-train_dataset<-make_dataset(train_paths)
-
-get_model<-function(img_size, num_classes) {
-  conv<-function(..., padding = "same", activation = "relu")
-    layer_conv_2d(..., padding = padding, activation = activation)
-  conv_transpose<-function(..., padding = "same", activation = "relu")
-    layer_conv_2d_transpose(..., padding = padding, activation = activation)
-  input<-layer_input(shape=c(img_size, 3))
-  output<-input %>%
-    layer_rescaling(scale = 1/255) %>%
-    conv(64, 3, strides= 2) %>%
-    conv(64, 3) %>%
-    conv(128, 3, strides= 2) %>%
-    conv(128, 3) %>%
-    conv(256, 3, strides= 2) %>%
-    conv(256, 3) %>%
-    conv_transpose(256, 3) %>%
-    conv_transpose(256, 3, strides = 2) %>%
-    conv_transpose(128, 3) %>%
-    conv_transpose(128, 3, strides = 2) %>%
-    conv_transpose(64, 3) %>%
-    conv_transpose(64, 3, strides = 2) %>%
-    conv(num_classes, 3, activation = "softmax")
-  keras_model(input,output)
-}
-
-target_model<-get_model(img_size = img_size, num_classes = 3)
-
-target_model
-
-target_model %>%
-  compile(optimizer="rmsprop",
-          loss="sparse_categorical_crossentropy")
-
-callbacks<- list(
-  callback_model_checkpoint("oxford_segmentation.keras",
-                            save_best_only = TRUE))
-
-history<-target_model%>% fit(
-  train_dataset,
-  epochs=50,
-  callbacks=callbacks,
-  validation_data=validation_dataset
+data <- tibble(
+  img = list.files(input_dir, full.names = TRUE),
+  mask = list.files(target_dir, full.names = TRUE)
 )
 
-plot(history)
+data <- initial_split(data, prop = 0.8)
 
-best_model<-load_model_tf("oxford_segmentation.keras")
+training_dataset <- training(data) %>%
+  tensor_slices_dataset() %>%
+  dataset_map(~.x %>% list_modify(
+    # decode_jpeg yields a 3d tensor of shape (1280, 1918, 3)
+    img = tf$image$decode_jpeg(tf$io$read_file(.x$img)),
+    # decode_gif yields a 4d tensor of shape (1, 1280, 1918, 3),
+    # so we remove the unneeded batch dimension and all but one
+    # of the 3 (identical) channels
+    mask = tf$image$decode_gif(tf$io$read_file(.x$mask))[1,,,][,,1,drop=FALSE]
+  ))
 
-save_model_tf(best_model,"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/segmentation_model/")
+example <- training_dataset %>% as_iterator() %>% iter_next()
+example
 
-test_image<-val_paths$input[109] %>%
-  tf_read_image_and_resize("jpeg",channels=3L)
+training_dataset <- training_dataset %>%
+  dataset_map(~.x %>% list_modify(
+    img = tf$image$convert_image_dtype(.x$img, dtype = tf$float32),
+    mask = tf$image$convert_image_dtype(.x$mask, dtype = tf$float32)
+  ))
 
-predicted_mask_probs<-
-  best_model(test_image[tf$newaxis, , , ])
+training_dataset <- training_dataset %>%
+  dataset_map(~.x %>% list_modify(
+    img = tf$image$resize(.x$img, size = shape(384, 384)),
+    mask = tf$image$resize(.x$mask, size = shape(384, 384))
+  ))
 
-predicted_mask<-
-  tf$argmax(predicted_mask_probs, axis = -1L)
+random_bsh <- function(img) {
+  img %>%
+    tf$image$random_brightness(max_delta = 0.3) %>%
+    tf$image$random_contrast(lower = 0.5, upper = 0.7) %>%
+    tf$image$random_saturation(lower = 0.5, upper = 0.7) %>%
+    # make sure we still are between 0 and 1
+    tf$clip_by_value(0, 1)
+}
 
-predicted_target <- predicted_mask + 1
+training_dataset <- training_dataset %>%
+  dataset_map(~.x %>% list_modify(
+    img = random_bsh(.x$img)
+  ))
 
-par(mfrow = c(1,2))
-display_image_tensor(test_image)
-display_target_sensor(predicted_target)
+example <- training_dataset %>% as_iterator() %>% iter_next()
+example$img %>% as.array() %>% as.raster() %>% plot()
+
+create_dataset <- function(data, train, batch_size = 8L) {
+
+  dataset <- data %>%
+    tensor_slices_dataset() %>%
+    dataset_map(~.x %>% list_modify(
+      img = tf$image$decode_jpeg(tf$io$read_file(.x$img)),
+      mask = tf$image$decode_gif(tf$io$read_file(.x$mask))[1,,,][,,1,drop=FALSE]
+    )) %>%
+    dataset_map(~.x %>% list_modify(
+      img = tf$image$convert_image_dtype(.x$img, dtype = tf$float32),
+      mask = tf$image$convert_image_dtype(.x$mask, dtype = tf$float32)
+    )) %>%
+    dataset_map(~.x %>% list_modify(
+      img = tf$image$resize(.x$img, size = shape(384, 384)),
+      mask = tf$image$resize(.x$mask, size = shape(384, 384))
+    ))
+
+  # data augmentation performed on training set only
+  if (train) {
+    dataset <- dataset %>%
+      dataset_map(~.x %>% list_modify(
+        img = random_bsh(.x$img)
+      ))
+  }
+
+  # shuffling on training set only
+  if (train) {
+    dataset <- dataset %>%
+      dataset_shuffle(buffer_size = batch_size)
+  }
+
+  # train in batches; batch size might need to be adapted depending on
+  # available memory
+  dataset <- dataset %>%
+    dataset_batch(batch_size)
+
+  dataset %>%
+    # output needs to be unnamed
+    dataset_map(unname)
+}
+
+training_dataset <- create_dataset(training(data), train = TRUE)
+validation_dataset <- create_dataset(testing(data), train = FALSE)
+
+model <- unet(input_shape = c(384, 384, 3),
+              num_classes = 1,
+              output_activation = "softmax")
+summary(model)
+
+dice <- custom_metric("dice", function(y_true, y_pred, smooth = 1.0) {
+  y_true_f <- k_flatten(y_true)
+  y_pred_f <- k_flatten(y_pred)
+  intersection <- k_sum(y_true_f * y_pred_f)
+  (2 * intersection + smooth) / (k_sum(y_true_f) + k_sum(y_pred_f) + smooth)
+})
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = list(dice, metric_binary_accuracy)
+)
+
+model |>
+  fit(
+    training_dataset, epochs = 30,
+    validation_data = validation_dataset
+  )
