@@ -73,8 +73,9 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_6")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis/20X/Raw_Imgs/Batch_6")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_8")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_8")
+mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/True_Mask/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -84,7 +85,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-10
+y<-1
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -126,6 +127,9 @@ seed_img<-single_cell_convert(seed.mtx.img)
 
 ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
 cmask<-propagate(neg_imgs[[y]],seeds=seed_img,mask=ctmask,lambda = 10^1)
+display(cmask)
+mask_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_mask.png")
+writeImage(cmask,files = paste0(mask_savdir, mask_image1))
 segmented<-paintObjects(cmask,rgb.imgs,col = c('black','orange'))
 display(segmented,all=TRUE)
 st_blob <- stackObjects(cmask,img_watershed)
@@ -135,7 +139,9 @@ st_img_test<-Image(st_img)
 #Shiny UI to remove certain cells
 image_select()
 
+#select one
 remove_images<-c('TRUE')
+remove_images<-c('FALSE')
 
 if(remove_images == 'TRUE'){
   #Removal of problematic images from output of 'image_select' Shiny UI

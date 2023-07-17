@@ -21,10 +21,10 @@ library(cyanocount2.0)
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/20X/Raw_Imgs/Batch_6")
-orient_savdir1 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/20X/Raw_Imgs/Batch_22/")
-orient_savdir2 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/20X/Raw_Imgs/Batch_23/")
-orient_savdir3 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/20X/Raw_Imgs/Batch_24/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_7")
+orient_savdir1 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_26/")
+orient_savdir2 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_27/")
+orient_savdir3 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_28/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -47,7 +47,7 @@ for (j in 1:length(read_images)){
 for (j in 1:length(read_images)){
   img_flop<-image_flop(read_images[[j]])
   img_flip<-image_flip(img_flop)
-  analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[j]]),"_2.tif")
+  analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[j]]),"_4.tif")
   image_write(img_flip,path = paste0(orient_savdir3, analyzed_image1))
 }
 
