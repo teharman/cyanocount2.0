@@ -11,7 +11,27 @@ library(tibble)
 library(rsample)
 library(tfdatasets)
 library(unet)
+library(EBImage)
 #______________________________________________________________________________#
+setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/')
+data_dir<-path("segmentation_model/")
+
+tiff_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/TIFF_imgs")
+JPEG_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/input_imgs/")
+images <- list.files(tiff_dir, pattern = "tif", full.name = T)
+images_names <- list.files(tiff_dir, pattern = "tif", full.name = F)
+imgNames <- paste0(images_names)
+
+for (y in 1:length(images)){
+  img <- readTIFF(images[[y]])
+  img_transposed <- aperm(img,c(2,1,3))
+  rgb.img<-Image(img_transposed,colormode = Color)
+  analyzed_image<-paste0(sub(").tif", replacement = ")", x=imgNames[[y]]),".png")
+  writeImage(rgb.img,files = paste0(JPEG_savdir, analyzed_image))
+}
+#______________________________________________________________________________#
+gc()
+
 setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/')
 data_dir<-path("segmentation_model/")
 
@@ -54,9 +74,12 @@ training_dataset <- training_dataset %>%
 
 training_dataset <- training_dataset %>%
   dataset_map(~.x %>% list_modify(
-    img = tf$image$resize(.x$img, size = shape(384, 384)),
-    mask = tf$image$resize(.x$mask, size = shape(384, 384))
+    img = tf$image$resize(.x$img, size = shape(384,384)),
+    mask = tf$image$resize(.x$mask, size = shape(384,384))
   ))
+
+example <- training_dataset %>% as_iterator() %>% iter_next()
+example
 
 random_bsh <- function(img) {
   img %>%
@@ -73,7 +96,9 @@ training_dataset <- training_dataset %>%
   ))
 
 example <- training_dataset %>% as_iterator() %>% iter_next()
-example$img %>% as.array() %>% as.raster() %>% plot()
+example$img %>% as.array() %>% display()
+example$mask %>% as.array() %>% display()
+
 
 create_dataset <- function(data, train, batch_size = 8L) {
 
@@ -119,26 +144,31 @@ create_dataset <- function(data, train, batch_size = 8L) {
 training_dataset <- create_dataset(training(data), train = TRUE)
 validation_dataset <- create_dataset(testing(data), train = FALSE)
 
-model <- unet(input_shape = c(384, 384, 3),
-              num_classes = 1,
-              output_activation = "softmax")
+model <- unet(input_shape = c(384, 384, 3))
 summary(model)
 
-dice <- custom_metric("dice", function(y_true, y_pred, smooth = 1.0) {
-  y_true_f <- k_flatten(y_true)
-  y_pred_f <- k_flatten(y_pred)
-  intersection <- k_sum(y_true_f * y_pred_f)
-  (2 * intersection + smooth) / (k_sum(y_true_f) + k_sum(y_pred_f) + smooth)
-})
+#dice <- custom_metric("dice", function(y_true, y_pred, smooth = 1.0) {
+#  y_true_f <- k_flatten(y_true)
+#  y_pred_f <- k_flatten(y_pred)
+#  intersection <- k_sum(y_true_f * y_pred_f)
+#  (2 * intersection + smooth) / (k_sum(y_true_f) + k_sum(y_pred_f) + smooth)
+#})
 
 model %>% compile(
   optimizer = "rmsprop",
-  loss = "binary_crossentropy",
-  metrics = list(dice, metric_binary_accuracy)
+  loss = "binary_crossentropy"
 )
 
-model |>
+callbacks<- list(
+  callback_model_checkpoint("cell_segmentation.keras",
+                            save_best_only = TRUE))
+
+model %>%
   fit(
-    training_dataset, epochs = 30,
-    validation_data = validation_dataset
+    training_dataset, epochs = 10
   )
+
+save_model_tf(model, "segmentation_model/initial_model/") #save model here
+
+batch<-validation_dataset %>% as_iterator() %>% iter_next()
+predictions<-predict(model,batch)
