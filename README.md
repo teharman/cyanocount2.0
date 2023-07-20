@@ -1,7 +1,9 @@
 # CyanoSCOPE
 
 ## Overview:
-R project file containing tools for CyanoSCOPE - a new deep-learning/AI tool for identifying and enumerating cyanobacteria.
+R project file containing tools for CyanoSCOPE - a new deep-learning/AI tool for identifying and enumerating cyanobacteria. 
+
+This tool utilizies TensorFlow, Keras, and UNet neural network models for segmentation and identification purposes. Enumeration capabilities are achieved using the ***cellcount*** package: https://github.com/teharman/cellcount_main
 
 ***UNDER CONSTRUCTION***
 
