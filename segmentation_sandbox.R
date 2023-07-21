@@ -1,8 +1,8 @@
 Sys.setenv(RETICULATE_PYTHON="C:/Users/Tyler.Harman/AppData/Local/r-miniconda/envs/r-reticulate")
-library(reticulate)
 py_config()
 reticulate::py_install('pillow')
 
+library(reticulate)
 library(keras)
 library(tensorflow)
 library(tidyverse)
@@ -12,6 +12,7 @@ library(rsample)
 library(tfdatasets)
 library(unet)
 library(EBImage)
+library(platypus)
 #______________________________________________________________________________#
 setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/')
 data_dir<-path("segmentation_model/")
@@ -38,7 +39,7 @@ data_dir<-path("segmentation_model/")
 input_dir<-data_dir / "input_imgs"
 target_dir<-data_dir / "true_mask"
 
-model <- unet(input_shape = c(384, 384, 3))
+model <- unet(input_shape = c(256, 256, 3))
 
 images <- tibble(
   img = list.files(input_dir, full.names = TRUE),
@@ -74,8 +75,8 @@ training_dataset <- training_dataset %>%
 
 training_dataset <- training_dataset %>%
   dataset_map(~.x %>% list_modify(
-    img = tf$image$resize(.x$img, size = shape(384,384)),
-    mask = tf$image$resize(.x$mask, size = shape(384,384))
+    img = tf$image$resize(.x$img, size = shape(256,256)),
+    mask = tf$image$resize(.x$mask, size = shape(256,256))
   ))
 
 example <- training_dataset %>% as_iterator() %>% iter_next()
@@ -144,31 +145,47 @@ create_dataset <- function(data, train, batch_size = 8L) {
 training_dataset <- create_dataset(training(data), train = TRUE)
 validation_dataset <- create_dataset(testing(data), train = FALSE)
 
-model <- unet(input_shape = c(384, 384, 3))
+model <- unet(input_shape = c(256, 256, 3),
+              num_classes = 2)
 summary(model)
 
-#dice <- custom_metric("dice", function(y_true, y_pred, smooth = 1.0) {
-#  y_true_f <- k_flatten(y_true)
-#  y_pred_f <- k_flatten(y_pred)
-#  intersection <- k_sum(y_true_f * y_pred_f)
-#  (2 * intersection + smooth) / (k_sum(y_true_f) + k_sum(y_pred_f) + smooth)
-#})
-
 model %>% compile(
-  optimizer = "rmsprop",
+  optimizer = "adam",
   loss = "binary_crossentropy"
 )
 
-callbacks<- list(
-  callback_model_checkpoint("cell_segmentation.keras",
-                            save_best_only = TRUE))
+datagen<-segmentation_generator(
+  path = "segmentation_model",
+  colormap = binary_colormap,
+  only_images = F,
+  mode = "dir",
+  net_h = 256,
+  net_w = 256,
+  grayscale = F,
+  batch_size = 8,
+  shuffle = F,
+  subdirs = c("/input_imgs","/true_mask")
+)
 
-model %>%
-  fit(
-    training_dataset, epochs = 10
+history<-model%>%
+  fit_generator(
+    datagen,
+    epochs=5,
+    steps_per_epoch = 24,
+    verbose = 1
   )
 
-save_model_tf(model, "segmentation_model/initial_model/") #save model here
+save_model_tf(model, "segmentation_model/initial_test_model/") #save model here
 
-batch<-validation_dataset %>% as_iterator() %>% iter_next()
-predictions<-predict(model,batch)
+test_img<-image_load("segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(256,256))
+test_img%>%image_to_array()%>%
+  '/'(255)%>%
+  as.raster()%>%
+  plot()
+test_array<-test_img%>%image_to_array()%>%
+  array_reshape(.,c(1,dim(.)))%>%
+  '/'(255)
+
+mask<-model%>%predict(test_array)%>%
+  get_masks(binary_colormap)
+plot(as.raster(mask[[1]]/255))
