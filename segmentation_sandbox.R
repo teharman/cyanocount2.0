@@ -177,6 +177,8 @@ history<-model%>%
 
 save_model_tf(model, "segmentation_model/initial_test_model/") #save model here
 
+model<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/initial_test_model/', custom_objects = NULL, compile = TRUE)
+
 test_img<-image_load("segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(256,256))
 test_img%>%image_to_array()%>%
   '/'(255)%>%
