@@ -24,6 +24,7 @@ library(shinyFiles)
 library(shinyjs)
 library(shinyBS)
 library(DT)
+library(shinythemes)
 library(cyanocount2.0)
 #___________________________________________________________#
 
@@ -36,51 +37,70 @@ images_list<<-data.frame(img_name = character(0))
 ui_main = fluidPage(
   useShinyjs(),
   extendShinyjs(text = jscode, functions = c("closeWindow")),
+  theme = shinytheme("cosmo"),
   sidebarPanel(navlistPanel(
     widths=c(12,12),
     "CyanoSCOPE - Prediction and Enumeration UI",
     header = div("",img(src='pics/CyanoSCOPE_Logo.png',
-                        id = "CyanoSCOPE Logo", height = "175px",width = "450px",style = "position: relative; margin:-15px 0px; display:right-align;"))
+                        id = "CyanoSCOPE Logo", height = "125px",width = "320px",style = "position: relative; margin:-15px 0px; display:right-align;"))
   ),
   h3(" "),
   h3(" "),
-  actionButton("close", "Close application",class = "btn-success",style='height:35px;width:450px;font-size:140%',icon=icon("check"),style="display:center-align"),
+  actionButton("close", "Close application",class = "btn-success",style='height:35px;width:320px;font-size:140%',icon=icon("check"),style="display:center-align"),
   h3(" "),
   "Developed by NOAA NCCOS HAB-F and UCSD Qualcomm Institute"),
   mainPanel(navbarPage(
     title=h4("CyanoSCOPE Tools"),
-    tabPanel(h6("1) Image(s) Selection and Upload"),
-             shinyDirButton('path1','1) Select Images','Please select a folder containing images',FALSE,class = "btn-success",style='height:35px;width:150px;font-size:100%',icon=icon("folder-open")),
-             actionButton("update1","2) Update Data",class = "btn-success",style='height:35px;width:150px;font-size:100%',icon=icon("arrows-rotate")),
-             actionButton("run1","3) Upload Images",class = "btn-success",style='height:35px;width:150px;font-size:100%',icon=icon("upload")),
-             actionButton("update2","4) View Images",class = "btn-success",style='height:35px;width:150px;font-size:100%',icon=icon("camera")),
-             verbatimTextOutput('path1',placeholder = TRUE),
-             column(
-               DT::dataTableOutput('img_data'),width=3),
-             plotOutput("current_image_plot"),
-             column(3,offset = 2,
-                    actionButton("previous", "Previous", icon=icon("arrow-left"),style='height:35px;width:175px;font-size:120%')),
-             column(3,offset = 1,
-                    actionButton("next", "Next", icon=icon("arrow-right"),style='height:35px;width:175px;font-size:120%'))
+    tabPanel(h5("1) Image(s) Selection and Upload"),
+             fluidRow(
+               shinyDirButton('path1','1) Select Images','Please select a folder containing images',FALSE,class = "btn-success",style='height:35px;width:175px;font-size:100%;display:center-align',icon=icon("folder-open")),
+               actionButton("update1","2) Update Data",class = "btn-success",style='height:35px;width:175px;font-size:100%;display:center-align',icon=icon("arrows-rotate")),
+               actionButton("run1","3) Upload Images",class = "btn-success",style='height:35px;width:175px;font-size:100%;display:center-align',icon=icon("upload")),
+               actionButton("update2","4) View Images",class = "btn-success",style='height:35px;width:175px;font-size:100%;display:center-align',icon=icon("camera"))
+             ),
+             h6(" "),
+             fluidRow(
+               verbatimTextOutput('path1',placeholder = TRUE)
+             ),
+             fluidRow(
+               column(5,
+                      wellPanel(DT::dataTableOutput('img_data'),width=3,style = "font-size:70%")
+               ),
+               column(7,
+                      wellPanel(plotOutput("current_image_plot"),style = "padding: 5px;")
+               )
+             ),
+             fluidRow(
+               column(4,offset = 5,
+                      actionButton("previous", "Previous", icon=icon("arrow-left"),style='height:35px;width:150px;font-size:120%;display:center-align')),
+               column(3,
+                      actionButton("next", "Next", icon=icon("arrow-right"),style='height:35px;width:150px;font-size:120%;display:center-align'))
+             )
     ),
-    tabPanel(h6("2) Binary Segmentation Modeling"),
-             actionButton("load1","1) Load Segmentation Model",class = 'btn-success',style='height:35px;width:225px;font-size:100%',icon=icon("upload")),
-             actionButton("run2","2) Run Binary Segmentation",class = 'btn-success',style='height:35px;width:225px;font-size:100%',icon=icon('person-running')),
-             actionButton("previous", "Previous", icon=icon("arrow-left"),style='height:35px;width:175px;font-size:120%'),
-             actionButton("next", "Next", icon=icon("arrow-right"),style='height:35px;width:175px;font-size:120%'),
-             column(4,offset = 2,
-                    plotOutput("current_image_plot1"))
+    tabPanel(h5("2) Binary Segmentation Modeling"),
+             fluidRow(
+               actionButton("load1","1) Load Segmentation Model",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon("upload")),
+               actionButton("run2","2) Run Binary Segmentation",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon('person-running'))
+             ),
+             h5(" "),
+             fluidRow(
+               column(7,
+                      wellPanel(plotOutput("current_image_plot1"),style = "padding: 5px;")
+                      ),
+               actionButton("previous1", "Previous", icon=icon("arrow-left"),style='height:35px;width:150px;font-size:120%;display:center-align'),
+               actionButton("next1", "Next", icon=icon("arrow-right"),style='height:35px;width:150px;font-size:120%;display:center-align')
+             )
     ),
-    tabPanel(h6("3) ID Prediction Modeling"),
+    tabPanel(h5("3) ID Prediction Modeling"),
              actionButton("run3","Run ID Prediction",class = 'btn-success',style='height:35px;width:225px;font-size:100%',icon=icon('magnifying-glass')),
              column(4,offset = 2,
                     plotOutput("current_image_plot2")),
              column(3,offset = 2,
-                    actionButton("previous", "Previous", icon=icon("arrow-left"),style='height:35px;width:175px;font-size:120%')),
+                    actionButton("previous2", "Previous", icon=icon("arrow-left"),style='height:35px;width:175px;font-size:120%')),
              column(3,offset = 1,
-                    actionButton("next", "Next", icon=icon("arrow-right"),style='height:35px;width:175px;font-size:120%')),
+                    actionButton("next2", "Next", icon=icon("arrow-right"),style='height:35px;width:175px;font-size:120%')),
     ),
-    tabPanel(h6("4) CyanoSCOPE analysis")
+    tabPanel(h5("4) CyanoSCOPE analysis")
     ),
     tags$style(type = 'text/css', '.navbar { background-color: #303030;
                            font-family: Arial;
@@ -144,6 +164,13 @@ server_main = function(input, output, session) {
   })
 
   ####server - tab 2####
+  index1 <- reactiveVal(1)
+  observeEvent(input[["previous1"]], {
+    index1(max(index1()-1, 1))
+  })
+  observeEvent(input[["next1"]], {
+    index1(min(index1()+1))
+  })
   observeEvent(input$load1,{
     message("loading segmentation model - please wait")
     model<<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/initial_test_model/', custom_objects = NULL, compile = TRUE)
@@ -153,23 +180,23 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$run2,{
     message("running segmentation model - please wait")
-    resize_img<-resize(read_images[[1]], w = 256,h = 256)
-    new_array<-resize_img%>%
-      array_reshape(.,c(1,dim(.)))
-    mask<-model%>%predict(new_array)%>%
+    test_img<-image_load(images[[1]],target_size = c(256,256))
+    new_array<-test_img%>%image_to_array()%>%array_reshape(.,c(1,dim(.)))%>%'/'(255)
+    mask_main<<-model%>%predict(new_array)%>%
       get_masks(binary_colormap)
-    mask_main<<-as.array(mask)
     for (z in 2:length(read_images)){
-      resize_img<-resize(read_images[[z]], w = 256,h = 256)
-      new_array<-resize_img%>%image_to_array()%>%
-        array_reshape(.,c(1,dim(.)))%>%
-        '/'(255)
+      test_img<-image_load(images[[z]],target_size = c(256,256))
+      new_array<-test_img%>%image_to_array()%>%array_reshape(.,c(1,dim(.)))%>%'/'(255)
       mask<-model%>%predict(new_array)%>%
         get_masks(binary_colormap)
       mask_main <<- append(mask_main, mask)
     }
     beepr::beep(sound=5)
     message("***segmentation prediction complete***")
+    output$current_image_plot1 <- renderPlot({
+      loaded_image1 <- magick::image_ggplot(image_read(mask_main[[index1()]]/255))
+      loaded_image1
+    },res=300,width=375,height=375)
   })
 
   ####server - tab 3####
@@ -189,4 +216,4 @@ server_main = function(input, output, session) {
   })
 }
 
-runGadget(ui_main, server_main, viewer = dialogViewer("CyanoSCOPE - Prediction and Enumeration UI",width = 1600, height = 800))
+runGadget(ui_main, server_main, viewer = dialogViewer("CyanoSCOPE - Prediction and Enumeration UI",width = 1200, height = 800))
