@@ -39,7 +39,7 @@ data_dir<-path("segmentation_model/")
 input_dir<-data_dir / "input_imgs"
 target_dir<-data_dir / "true_mask"
 
-model <- unet(input_shape = c(256, 256, 3))
+model <- unet(input_shape = c(1024, 1024, 3))
 
 images <- tibble(
   img = list.files(input_dir, full.names = TRUE),
@@ -75,8 +75,8 @@ training_dataset <- training_dataset %>%
 
 training_dataset <- training_dataset %>%
   dataset_map(~.x %>% list_modify(
-    img = tf$image$resize(.x$img, size = shape(256,256)),
-    mask = tf$image$resize(.x$mask, size = shape(256,256))
+    img = tf$image$resize(.x$img, size = shape(1024,1024)),
+    mask = tf$image$resize(.x$mask, size = shape(1024,1024))
   ))
 
 example <- training_dataset %>% as_iterator() %>% iter_next()
@@ -114,8 +114,8 @@ create_dataset <- function(data, train, batch_size = 8L) {
       mask = tf$image$convert_image_dtype(.x$mask, dtype = tf$float32)
     )) %>%
     dataset_map(~.x %>% list_modify(
-      img = tf$image$resize(.x$img, size = shape(384, 384)),
-      mask = tf$image$resize(.x$mask, size = shape(384, 384))
+      img = tf$image$resize(.x$img, size = shape(1024,1024)),
+      mask = tf$image$resize(.x$mask, size = shape(1024,1024))
     ))
 
   # data augmentation performed on training set only
@@ -145,7 +145,7 @@ create_dataset <- function(data, train, batch_size = 8L) {
 training_dataset <- create_dataset(training(data), train = TRUE)
 validation_dataset <- create_dataset(testing(data), train = FALSE)
 
-model <- unet(input_shape = c(256, 256, 3),
+model <- unet(input_shape = c(1024, 1024, 3),
               num_classes = 2)
 summary(model)
 
@@ -159,8 +159,8 @@ datagen<-segmentation_generator(
   colormap = binary_colormap,
   only_images = F,
   mode = "dir",
-  net_h = 256,
-  net_w = 256,
+  net_h = 1024,
+  net_w = 1024,
   grayscale = F,
   batch_size = 8,
   shuffle = F,
@@ -170,16 +170,16 @@ datagen<-segmentation_generator(
 history<-model%>%
   fit_generator(
     datagen,
-    epochs=5,
+    epochs=10,
     steps_per_epoch = 24,
     verbose = 1
   )
 
-save_model_tf(model, "segmentation_model/initial_test_model/") #save model here
+save_model_tf(model, "models/segmentation_model/updated_test_model/") #save model here
 
-model<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/initial_test_model/', custom_objects = NULL, compile = TRUE)
+model<-load_model_tf('models/segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
 
-test_img<-image_load("segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(256,256))
+test_img<-image_load("models/segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(1024,1024))
 test_img%>%image_to_array()%>%
   '/'(255)%>%
   as.raster()%>%
