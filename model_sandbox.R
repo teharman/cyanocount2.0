@@ -9,105 +9,105 @@ library(tidyverse)
 library(fs)
 #__________________________________________________________________________
 ####old model####
-setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model")
-
-model_label<-dir("Train/")
-output_n<-length(model_label)
-save(model_label, file="label_list.R")
-
-width<-100
-height<-100
-target_size<-c(width,height)
-rgb<-3
-
-path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/Train/"
-train_data_gen<-image_data_generator(rescale=1/255,
-                                     validation_split = 0.2)
-train_images<-flow_images_from_directory(path_train,
-                                         train_data_gen,
-                                         subset="training",
-                                         target_size=target_size,
-                                         class_mode = "categorical",
-                                         shuffle = F,
-                                         classes = model_label,
-                                         seed = 2021)
-validation_images <- flow_images_from_directory(path_train,
-                                                train_data_gen,
-                                                subset = 'validation',
-                                                target_size = target_size,
-                                                class_mode = "categorical",
-                                                classes = model_label,
-                                                seed = 2021)
-
-table(train_images$classes)
-plot(as.raster(train_images[[1]][[1]][12,,,]))
-
-mod_base <- application_xception(weights = 'imagenet',
-                                 include_top = FALSE, input_shape = c(width, height, 3))
-freeze_weights(mod_base)
-
-model_function <- function(learning_rate = 0.001,
-                           dropoutrate=0.2, n_dense=1024){
-
-  k_clear_session()
-
-  model <- keras_model_sequential() %>%
-    mod_base %>%
-    layer_global_average_pooling_2d() %>%
-    layer_dense(units = n_dense) %>%
-    layer_activation("relu") %>%
-    layer_dropout(dropoutrate) %>%
-    layer_dense(units=output_n, activation="softmax")
-
-  model %>% compile(
-    loss = "categorical_crossentropy",
-    optimizer = optimizer_adam(lr = learning_rate),
-    metrics = "accuracy"
-  )
-
-  return(model)
-
-}
-
-model<-model_function()
-model
-
-batch_size<-128
-epochs<-6
-
-hist <- model %>% fit_generator(
-  train_images,
-  steps_per_epoch = train_images$n %/% batch_size,
-  epochs = epochs,
-  validation_data = validation_images,
-  validation_steps = validation_images$n %/% batch_size,
-  verbose = 2
-)
-
-path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/Test/"
-
-test_data_gen <- image_data_generator(rescale = 1/255)
-test_images <- flow_images_from_directory(path_test,
-                                          test_data_gen,
-                                          target_size = target_size,
-                                          class_mode = "categorical",
-                                          classes = model_label,
-                                          shuffle = F,
-                                          seed = 2021)
-model %>% evaluate_generator(test_images,
-                             steps = test_images$n)
-
-test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/Test/Microcystis/Microcystis_40X_color_test (5).tif",
-                         target_size = target_size)
-
-x <- image_to_array(test_image)
-x <- array_reshape(x, c(1, dim(x)))
-x <- x/255
-pred <- model %>% predict(x)
-pred <- data.frame("Species" = model_label, "Probability" = t(pred))
-pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
-pred$Probability <- paste(format(100*pred$Probability,2),"%")
-pred
+#setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model")
+#
+#model_label<-dir("Train/")
+#output_n<-length(model_label)
+#save(model_label, file="label_list.R")
+#
+#width<-100
+#height<-100
+#target_size<-c(width,height)
+#rgb<-3
+#
+#path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/Train/"
+#train_data_gen<-image_data_generator(rescale=1/255,
+#                                     validation_split = 0.2)
+#train_images<-flow_images_from_directory(path_train,
+#                                         train_data_gen,
+#                                         subset="training",
+#                                         target_size=target_size,
+#                                         class_mode = "categorical",
+#                                         shuffle = F,
+#                                         classes = model_label,
+#                                         seed = 2021)
+#validation_images <- flow_images_from_directory(path_train,
+#                                                train_data_gen,
+#                                                subset = 'validation',
+#                                                target_size = target_size,
+#                                                class_mode = "categorical",
+#                                                classes = model_label,
+#                                                seed = 2021)
+#
+#table(train_images$classes)
+#plot(as.raster(train_images[[1]][[1]][12,,,]))
+#
+#mod_base <- application_xception(weights = 'imagenet',
+#                                 include_top = FALSE, input_shape = c(width, height, 3))
+#freeze_weights(mod_base)
+#
+#model_function <- function(learning_rate = 0.001,
+#                           dropoutrate=0.2, n_dense=1024){
+#
+#  k_clear_session()
+#
+#  model <- keras_model_sequential() %>%
+#    mod_base %>%
+#    layer_global_average_pooling_2d() %>%
+#    layer_dense(units = n_dense) %>%
+#    layer_activation("relu") %>%
+#    layer_dropout(dropoutrate) %>%
+#    layer_dense(units=output_n, activation="softmax")
+#
+#  model %>% compile(
+#    loss = "categorical_crossentropy",
+#    optimizer = optimizer_adam(lr = learning_rate),
+#    metrics = "accuracy"
+#  )
+#
+#  return(model)
+#
+#}
+#
+#model<-model_function()
+#model
+#
+#batch_size<-128
+#epochs<-6
+#
+#hist <- model %>% fit_generator(
+#  train_images,
+#  steps_per_epoch = train_images$n %/% batch_size,
+#  epochs = epochs,
+#  validation_data = validation_images,
+#  validation_steps = validation_images$n %/% batch_size,
+#  verbose = 2
+#)
+#
+#path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/Test/"
+#
+#test_data_gen <- image_data_generator(rescale = 1/255)
+#test_images <- flow_images_from_directory(path_test,
+#                                          test_data_gen,
+#                                          target_size = target_size,
+#                                          class_mode = "categorical",
+#                                          classes = model_label,
+#                                          shuffle = F,
+#                                          seed = 2021)
+#model %>% evaluate_generator(test_images,
+#                             steps = test_images$n)
+#
+#test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/Test/Microcystis/Microcystis_40X_color_test (5).tif",
+#                         target_size = target_size)
+#
+#x <- image_to_array(test_image)
+#x <- array_reshape(x, c(1, dim(x)))
+#x <- x/255
+#pred <- model %>% predict(x)
+#pred <- data.frame("Species" = model_label, "Probability" = t(pred))
+#pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
+#pred$Probability <- paste(format(100*pred$Probability,2),"%")
+#pred
 
 
 ####new model####
@@ -135,7 +135,7 @@ new.model%>%compile(loss="binary_crossentropy",
                     metrics = "accuracy")
 
 setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model")
-original_dir<-path("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/test_folder")
+original_dir<-path("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/data/test_folder")
 new_base_dir<-path("small_data")
 
 make_subset_20X<-function(subset_name, start_index, end_index){
@@ -195,5 +195,18 @@ history <- new.model %>%
     callbacks = callbacks
   )
 
-test_model<-load_model_tf("convnet_from_scratch.keras")
+save_model_tf(new.model, "small_data/model/") #save model here
+test_model<-load_model_tf('small_data/model/', custom_objects = NULL, compile = TRUE)
 result<-evaluate(test_model,test_dataset)
+
+model_label<-dir("Train/")
+test_image <- image_load("misc/Test/Microcystis/Microcystis_20X_color_test (9).tif",
+                         target_size = c(100,100))
+x <- image_to_array(test_image)
+x <- array_reshape(x, c(1, dim(x)))
+x <- x/255
+pred <- test_model %>% predict(x)
+pred <- data.frame("Species" = model_label, "Probability" = t(pred))
+pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
+pred$Probability <- paste(format(100*pred$Probability,2),"%")
+pred
