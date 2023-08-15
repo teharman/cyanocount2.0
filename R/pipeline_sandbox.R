@@ -250,6 +250,7 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$run3,{
     message("running ID prediction model - please wait")
+    predict_model<<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/small_data/model/', custom_objects = NULL, compile = TRUE)
     watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
@@ -314,6 +315,18 @@ server_main = function(input, output, session) {
     }
     beepr::beep(sound=1)
     message("cyanobacteria ID prediction complete")
+  })
+  observeEvent(input$update3,{
+    model_label<-dir("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/misc/Train/")
+    resize_img<-resize(img_select[,,,1],w=100,h=100)
+    x <- image_to_array(resize_img)
+    x <- array_reshape(x, c(1, dim(x)))
+    x <- x/255
+    pred <- predict_model %>% predict(x)
+    pred <- data.frame("Species" = model_label, "Probability" = t(pred))
+    pred <- pred[order(pred$Probability, decreasing=T),][1:2,]
+    pred$Probability <- paste(format(100*pred$Probability,2),"%")
+    pred_list<<-read.table(text=image_names,col.names = c('img_name'))
   })
   observeEvent(input$update4,{
     output$current_image_plot2 <- renderPlot({
