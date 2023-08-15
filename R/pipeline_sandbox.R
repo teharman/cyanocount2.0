@@ -67,7 +67,7 @@ ui_main = fluidPage(
                       wellPanel(DT::dataTableOutput('img_data'),width=3,style = "font-size:70%")
                ),
                column(7,
-                      wellPanel(plotOutput("current_image_plot"),style = "padding: 5px;")
+                      wellPanel(plotOutput("current_image_plot"),style = "padding: 0px;")
                )
              ),
              fluidRow(
@@ -85,20 +85,45 @@ ui_main = fluidPage(
              h5(" "),
              fluidRow(
                column(7,
-                      wellPanel(plotOutput("current_image_plot1"),style = "padding: 5px;")
+                      wellPanel(plotOutput("current_image_plot1"),style = "padding: 0px;")
                       ),
                actionButton("previous1", "Previous", icon=icon("arrow-left"),style='height:35px;width:150px;font-size:120%;display:center-align'),
                actionButton("next1", "Next", icon=icon("arrow-right"),style='height:35px;width:150px;font-size:120%;display:center-align')
              )
     ),
     tabPanel(h5("3) ID Prediction Modeling"),
-             actionButton("run3","Run ID Prediction",class = 'btn-success',style='height:35px;width:225px;font-size:100%',icon=icon('magnifying-glass')),
-             column(4,offset = 2,
-                    plotOutput("current_image_plot2")),
-             column(3,offset = 2,
-                    actionButton("previous2", "Previous", icon=icon("arrow-left"),style='height:35px;width:175px;font-size:120%')),
-             column(3,offset = 1,
-                    actionButton("next2", "Next", icon=icon("arrow-right"),style='height:35px;width:175px;font-size:120%')),
+             fluidRow(
+               actionButton("run3","1) Run ID Prediction",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon('magnifying-glass')),
+               actionButton("update3","2) Update Predict Data",class = "btn-success",style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon("arrows-rotate")),
+               actionButton("update4","3) View Segmented Cells",class = "btn-success",style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon("camera"))
+             ),
+             h6(" "),
+             fluidRow(
+               column(5,
+                      wellPanel(DT::dataTableOutput('predict_data'),width=3,style = "font-size:70%")
+               ),
+               column(7,
+                      wellPanel(plotOutput("current_image_plot2"),style = "padding: 0px;")
+               )
+             ),
+             fluidRow(
+               column(5,
+                      textOutput("image_info"),placeholder=TRUE,style="font-size:105%;font-weight:bold"),
+               column(4,
+                      actionButton("previous2", "IMG_Previous", icon=icon("arrow-left"),style='height:35px;width:150px;font-size:100%;display:center-align')),
+               column(3,
+                      actionButton("next2", "IMG_Next", icon=icon("arrow-right"),style='height:35px;width:150px;font-size:100%;display:center-align'))
+             ),
+             fluidRow(
+               column(2,
+                      textOutput("image_num1"),placeholder=TRUE,style="font-size:105%;font-weight:bold"),
+               column(3,
+                      textOutput("seg_num"),placeholder=TRUE,style="font-size:105%;font-weight:bold"),
+               column(4,
+                      actionButton("previous3", "Cell_Previous", icon=icon("arrow-left"),style='height:35px;width:150px;font-size:100%;display:center-align')),
+               column(3,
+                      actionButton("next3", "Cell_Next", icon=icon("arrow-right"),style='height:35px;width:150px;font-size:100%;display:center-align'))
+             )
     ),
     tabPanel(h5("4) CyanoSCOPE analysis")
     ),
@@ -146,7 +171,7 @@ server_main = function(input, output, session) {
   observeEvent(input$run1, {
     message("uploading images - please wait")
     read_images <<- lapply(images, readTIFF)
-    beepr::beep(sound=5)
+    beepr::beep(sound=1)
     message("***image upload complete***")
   })
 
@@ -154,7 +179,7 @@ server_main = function(input, output, session) {
     index(max(index()-1, 1))
   })
   observeEvent(input[["next"]], {
-    index(min(index()+1))
+    index(min(index()+1, length(images)))
   })
   observeEvent(input$update2,{
     output$current_image_plot <- renderPlot({
@@ -169,13 +194,13 @@ server_main = function(input, output, session) {
     index1(max(index1()-1, 1))
   })
   observeEvent(input[["next1"]], {
-    index1(min(index1()+1))
+    index1(min(index1()+1, length(mask_main)))
   })
   observeEvent(input$load1,{
     message("loading segmentation model - please wait")
     model<<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/initial_test_model/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
-    beepr::beep(sound=5)
+    beepr::beep(sound=1)
     message("***model upload complete***")
   })
   observeEvent(input$run2,{
@@ -191,7 +216,7 @@ server_main = function(input, output, session) {
         get_masks(binary_colormap)
       mask_main <<- append(mask_main, mask)
     }
-    beepr::beep(sound=5)
+    beepr::beep(sound=1)
     message("***segmentation prediction complete***")
     output$current_image_plot1 <- renderPlot({
       loaded_image1 <- magick::image_ggplot(image_read(mask_main[[index1()]]/255))
@@ -200,10 +225,102 @@ server_main = function(input, output, session) {
   })
 
   ####server - tab 3####
+  index2 <- reactiveVal(1)
+  index3 <- reactiveVal(1)
+  observeEvent(input[["previous2"]], {
+    index2(max(index2()-1, 1))
+  })
+  observeEvent(input[["next2"]], {
+    index2(min(index2()+1, length(cell_seg)))
+  })
+  observeEvent(input[["previous3"]], {
+    index3(max(index3()-1, 1))
+  })
+  observeEvent(input[["next3"]], {
+    index3(min(index3()+1, dim(img_select)[4]))
+  })
+  output$image_info<-renderText({
+    paste('Image: ',image_names[[index2()]])
+  })
+  output$image_num1<-renderText({
+    paste('Image #: ',index2())
+  })
+  output$seg_num<-renderText({
+    paste('Cell #: ',index3())
+  })
   observeEvent(input$run3,{
     message("running ID prediction model - please wait")
-    beepr::beep(sound=5)
+    watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
+      if (removeEdgeCells == TRUE){
+        image <- thresh(x, w = w, h = h, offset = offset)
+        image1 <- fillHull(image)
+        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        nf <- computeFeatures.shape(image2)
+        nr <- which(nf[, "s.area"] < areathresh)
+        image3 <- rmObjects(image2, nr)
+        dims <- dim(image3)
+        border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
+        ids <- unique(border1[which(border1 != 0)])
+        inner <- rmObjects(image3, ids)
+        return(inner)
+      } else{
+        image <- thresh(x, w = w, h = h, offset = offset)
+        image1 <- fillHull(image)
+        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        nf <- computeFeatures.shape(image2)
+        nr <- which(nf[, "s.area"] < areathresh)
+        image3 <- rmObjects(image2, nr)
+        return(image3)
+      }
+    }
+    test_img<-image_load(images[[6]],target_size = c(256,256))
+    img_array<-test_img%>%image_to_array()%>%'/'(255)
+    rgb.imgs<-Image(img_array,colormode = Color)
+    mask<-abind(mask_main[[6]])
+    mask<-mask[,,1]
+    display(mask)
+    img_watershed<-watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+    ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
+    seed_mask<-single_cell_convert(ctmask)
+    cmask<-propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
+    cmask1<-array_reshape(cmask,c(dim(cmask),1))
+    display(rgb.imgs)
+    display(cmask1)
+    segmented<-paintObjects(cmask,rgb.imgs,col = c('black','orange'))
+    display(segmented,all=TRUE)
+    st_img <- stackObjects(cmask,rgb.imgs)
+    st_img_test <- Image(st_img)
+    cell_seg <<- list(st_img_test)
+    for (z in 7:length(read_images)){
+      test_img<-image_load(images[[z]],target_size = c(256,256))
+      img_array<-test_img%>%image_to_array()%>%'/'(255)
+      rgb.imgs<-Image(img_array,colormode = Color)
+      mask<-abind(mask_main[[z]])
+      mask<-mask[,,1]
+      display(mask)
+      img_watershed<-watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=5,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+      ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
+      seed_mask<-single_cell_convert(ctmask)
+      cmask<-propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
+      cmask1<-array_reshape(cmask,c(dim(cmask),1))
+      display(rgb.imgs)
+      display(cmask1)
+      segmented<-paintObjects(cmask,rgb.imgs,col = c('black','orange'))
+      display(segmented,all=TRUE)
+      st_img <- stackObjects(cmask,rgb.imgs)
+      seg_cell<-list(st_img)
+      seg_cell_test<-Image(seg_cell)
+      cell_seg<<-append(cell_seg,seg_cell_test)
+    }
+    beepr::beep(sound=1)
     message("cyanobacteria ID prediction complete")
+  })
+  observeEvent(input$update4,{
+    output$current_image_plot2 <- renderPlot({
+      img_select<<-(cell_seg[[index2()]])
+      loaded_image2 <- magick::image_ggplot(image_read(img_select[,,,index3()]))
+      loaded_image2
+    },res=300,width=375,height=375)
   })
 
   ####other####
