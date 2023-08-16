@@ -198,19 +198,19 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$load1,{
     message("loading segmentation model - please wait")
-    model<<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/initial_test_model/', custom_objects = NULL, compile = TRUE)
+    model<<-load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     beepr::beep(sound=1)
     message("***model upload complete***")
   })
   observeEvent(input$run2,{
     message("running segmentation model - please wait")
-    test_img<-image_load(images[[1]],target_size = c(256,256))
+    test_img<-image_load(images[[1]],target_size = c(1024,1024))
     new_array<-test_img%>%image_to_array()%>%array_reshape(.,c(1,dim(.)))%>%'/'(255)
     mask_main<<-model%>%predict(new_array)%>%
       get_masks(binary_colormap)
     for (z in 2:length(read_images)){
-      test_img<-image_load(images[[z]],target_size = c(256,256))
+      test_img<-image_load(images[[z]],target_size = c(1024,1024))
       new_array<-test_img%>%image_to_array()%>%array_reshape(.,c(1,dim(.)))%>%'/'(255)
       mask<-model%>%predict(new_array)%>%
         get_masks(binary_colormap)
@@ -221,7 +221,7 @@ server_main = function(input, output, session) {
     output$current_image_plot1 <- renderPlot({
       loaded_image1 <- magick::image_ggplot(image_read(mask_main[[index1()]]/255))
       loaded_image1
-    },res=300,width=375,height=375)
+    },res=300,width=400,height=400)
   })
 
   ####server - tab 3####
@@ -274,7 +274,7 @@ server_main = function(input, output, session) {
         return(image3)
       }
     }
-    test_img<-image_load(images[[6]],target_size = c(256,256))
+    test_img<-image_load(images[[6]],target_size = c(1024,1024))
     img_array<-test_img%>%image_to_array()%>%'/'(255)
     rgb.imgs<-Image(img_array,colormode = Color)
     mask<-abind(mask_main[[6]])
@@ -293,7 +293,7 @@ server_main = function(input, output, session) {
     st_img_test <- Image(st_img)
     cell_seg <<- list(st_img_test)
     for (z in 7:length(read_images)){
-      test_img<-image_load(images[[z]],target_size = c(256,256))
+      test_img<-image_load(images[[z]],target_size = c(1024,1024))
       img_array<-test_img%>%image_to_array()%>%'/'(255)
       rgb.imgs<-Image(img_array,colormode = Color)
       mask<-abind(mask_main[[z]])
