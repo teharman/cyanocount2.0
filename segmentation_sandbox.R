@@ -175,11 +175,11 @@ history<-model%>%
     verbose = 1
   )
 
-save_model_tf(model, "models/segmentation_model/updated_test_model/") #save model here
+save_model_tf(model, "segmentation_model/updated_test_model/") #save model here
 
-model<-load_model_tf('models/segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
+model<-load_model_tf('segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
 
-test_img<-image_load("models/segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(1024,1024))
+test_img<-image_load("segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(1024,1024))
 test_img%>%image_to_array()%>%
   '/'(255)%>%
   as.raster()%>%
