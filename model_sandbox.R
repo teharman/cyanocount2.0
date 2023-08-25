@@ -51,7 +51,7 @@ mod_base <- application_xception(weights = 'imagenet',
 freeze_weights(mod_base)
 
 model_function <- function(learning_rate = 0.001,
-                           dropoutrate=0.2, n_dense=1024){
+                           dropoutrate=0.2, n_dense=150){
 
   k_clear_session()
 
@@ -99,7 +99,7 @@ test_images <- flow_images_from_directory(path_test,
                                           shuffle = F,
                                           seed = 2021)
 model %>% evaluate_generator(test_images,
-                             steps = test_images$n)
+                             steps = test_images$n/batch_size)
 
 test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/test/Anabaena/Anabaena_20X_color (378).png",
                          target_size = target_size)
@@ -113,4 +113,4 @@ pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
 pred$Probability <- paste(format(100*pred$Probability,2),"%")
 pred
 
-save_model_tf(model, "models/ID_predict_model/model/") #save model here
+save_model_tf(model, "ID_predict_model/ID_model_test/") #save model here
