@@ -132,7 +132,8 @@ ui_main = fluidPage(
     tabPanel(h6("4) CyanoSCOPE analysis"),
              fluidRow(
                actionButton("run4","1) Generate Predict Image",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon('wrench')),
-               actionButton("save1","2) Save Images/Datasets",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon('save'))
+               actionButton("update6","2) View Predict Images",class = "btn-success",style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon("camera")),
+               actionButton("save1","3) Save Images/Datasets",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon('save'))
              ),
              h6(" "),
              column(12,
@@ -365,23 +366,105 @@ server_main = function(input, output, session) {
   })
 
   ####server - tab 4####
+  cell.coord<<-data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
+  index5 <- reactiveVal(1)
+  observeEvent(input[["previous4"]], {
+    index5(max(index5()-1, 1))
+  })
+  observeEvent(input[["next4"]], {
+    index5(min(index5()+1, length(images)))
+  })
   observeEvent(input$run4,{
     message("generating prediction image - please wait")
-    coord.mtx<-RSAGA::grid.to.xyz(cmask)
-    filter<-filter(coord.mtx,z>0)
-    cell.coord<-data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
-    for(k in 1:length(cell_seg)) {
-      cell_img<-cell_seg[[k]]
-      for(j in 1:dim(cell_img)[4]){
-        filter.mtx<-subset(filter,z==j)
-        xmin<-min(filter.mtx$x)
-        xmax<-max(filter.mtx$x)
-        ymin<-min(filter.mtx$y)
-        ymax<-max(filter.mtx$y)
-        cell.coord[nrow(cell.coord) + 1, ] <- c(xmin, xmax, ymin, ymax)
+    watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
+      if (removeEdgeCells == TRUE){
+        image <- thresh(x, w = w, h = h, offset = offset)
+        image1 <- fillHull(image)
+        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        nf <- computeFeatures.shape(image2)
+        nr <- which(nf[, "s.area"] < areathresh)
+        image3 <- rmObjects(image2, nr)
+        dims <- dim(image3)
+        border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
+        ids <- unique(border1[which(border1 != 0)])
+        inner <- rmObjects(image3, ids)
+        return(inner)
+      } else{
+        image <- thresh(x, w = w, h = h, offset = offset)
+        image1 <- fillHull(image)
+        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        nf <- computeFeatures.shape(image2)
+        nr <- which(nf[, "s.area"] < areathresh)
+        image3 <- rmObjects(image2, nr)
+        return(image3)
       }
     }
+    for(k in 1:length(cell_seg)) {
+      cell_img<-cell_seg[[k]]
+      test_img<-image_load(images[[k]],target_size = c(1024,1024))
+      img_array<-test_img%>%image_to_array()%>%'/'(255)
+      rgb.imgs<-Image(img_array,colormode = Color)
+      mask<-abind(mask_main[[k]])
+      mask<-mask[,,1]
+      display(mask)
+      img_watershed<-watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=0,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+      ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
+      seed_mask<-single_cell_convert(ctmask)
+      display(seed_mask)
+      cmask<-propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
+      segmented<-paintObjects(cmask,rgb.imgs,col = c('black','orange'))
+      display(segmented)
+      coord.mtx<-RSAGA::grid.to.xyz(cmask)
+      filter<-filter(coord.mtx,z>0)
+      for(j in 1:dim(cell_img)[4]){
+        filter.mtx<-subset(filter,z==j)
+        xmin<-min(filter.mtx$x)-1
+        xmax<-max(filter.mtx$x)+1
+        ymin<-min(filter.mtx$y)-1
+        ymax<-max(filter.mtx$y)+1
+        cell.coord[nrow(cell.coord) + 1, ] <<- c(xmin, xmax, ymin, ymax)
+        rm(filter.mtx)
+      }
+      rm(coord.mtx)
+      rm(filter)
+    }
     ID.input<-cbind(ID.input,cell.coord)
+
+    test_ID.input<-subset(ID.input,file_ID==image_names[[1]])
+    test_img<-image_load(images[[1]],target_size = c(1024,1024))
+    img_array<-test_img%>%image_to_array()%>%'/'(255)
+    rgb.imgs<-Image(img_array,colormode = Color)
+    test_img1<-magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+    estimate_plot<-test_img1+geom_rect(data = test_ID.input,
+                                       aes(xmin = xmin, xmax = xmax,
+                                           ymin = ymin, ymax = ymax,
+                                           fill = ID_estimate, colour = ID_estimate),
+                                       alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+      theme(legend.position = "bottom")
+    estimate_list<<-list(estimate_plot)
+    for(r in 2:length(read_images)) {
+      test_ID.input<-subset(ID.input,file_ID==image_names[[r]])
+      test_img<-image_load(images[[r]],target_size = c(1024,1024))
+      img_array<-test_img%>%image_to_array()%>%'/'(255)
+      rgb.imgs<-Image(img_array,colormode = Color)
+      test_img1<-magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+      estimate_plot<-test_img1+geom_rect(data = test_ID.input,
+                                         aes(xmin = xmin, xmax = xmax,
+                                             ymin = ymin, ymax = ymax,
+                                             fill = ID_estimate, colour = ID_estimate),
+                                         alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+        theme(legend.position = "bottom")
+      estimate_list1<-list(estimate_plot)
+      estimate_list<<-append(estimate_list,estimate_list1)
+    }
+    message("***Prediction image generated***")
+    beepr::beep(sound=1)
+  })
+  observeEvent(input$update6,{
+    output$current_image_plot3 <- renderPlot({
+      loaded_image4 <- plot(estimate_list[[index5()]])
+      loaded_image4
+    },res=300,width=800,height=500)
   })
 
   ####other####
