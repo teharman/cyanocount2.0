@@ -114,3 +114,76 @@ pred$Probability <- paste(format(100*pred$Probability,2),"%")
 pred
 
 save_model_tf(model, "ID_predict_model/ID_model_test/") #save model here
+
+tune_grid <- data.frame("learning_rate" = c(0.001,0.0001),
+                        "dropoutrate" = c(0.3,0.2),
+                        "n_dense" = c(1024,256))
+tuning_results <- NULL
+set.seed(2021)
+
+for (i in 1:length(tune_grid$learning_rate)){
+  for (j in 1:length(tune_grid$dropoutrate)){
+    for (k in 1:length(tune_grid$n_dense)){
+
+      model <- model_function(
+        learning_rate = tune_grid$learning_rate[i],
+        dropoutrate = tune_grid$dropoutrate[j],
+        n_dense = tune_grid$n_dense[k])
+
+      hist <- model %>% fit_generator(
+        train_images,
+        steps_per_epoch = train_images$n %/% batch_size,
+        epochs = epochs,
+        validation_data = validation_images,
+        validation_steps = validation_images$n %/%
+          batch_size,
+        verbose = 2
+      )
+
+      #Save model configurations
+      tuning_results <- rbind(
+        tuning_results,
+        c("learning_rate" = tune_grid$learning_rate[i],
+          "dropoutrate" = tune_grid$dropoutrate[j],
+          "n_dense" = tune_grid$n_dense[k],
+          "val_accuracy" = hist$metrics$val_accuracy))
+
+    }
+  }
+}
+
+tuning_results
+
+best_results <- tuning_results[which(
+  tuning_results[,ncol(tuning_results)] ==
+    max(tuning_results[,ncol(tuning_results)])),]
+
+best_results<-as.data.frame(best_results)
+
+model <- model_function(learning_rate =
+                          best_results$learning_rate[2],
+                        dropoutrate = best_results$dropoutrate[2],
+                        n_dense = best_results$n_dense[2])
+
+hist <- model %>% fit_generator(
+  train_images,
+  steps_per_epoch = train_images$n %/% batch_size,
+  epochs = epochs,
+  validation_data = validation_images,
+  validation_steps = validation_images$n %/% batch_size,
+  verbose = 2
+)
+
+save_model_tf(model, "ID_predict_model/ID_model_test_mod/")
+
+test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/test/F192/F192_20X_color (393).png",
+                         target_size = target_size)
+
+x <- image_to_array(test_image)
+x <- array_reshape(x, c(1, dim(x)))
+x <- x/255
+pred <- model %>% predict(x)
+pred <- data.frame("Species" = model_label, "Probability" = t(pred))
+pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
+pred$Probability <- paste(format(100*pred$Probability,2),"%")
+pred

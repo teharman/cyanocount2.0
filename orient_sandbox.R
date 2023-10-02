@@ -21,10 +21,26 @@ library(cyanocount2.0)
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_7")
-orient_savdir1 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_26/")
-orient_savdir2 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_27/")
-orient_savdir3 <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Batch_28/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Nikon_TE300/Microcystis_F259/40X/Raw_Imgs/Batch_2")
+orient_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Nikon_TE300/Microcystis_F259/40X/Raw_Imgs")
+folder_name<-basename(img_dir)
+
+Index1<-paste0("/Orient_1_",folder_name,"/ ")
+newpath1<-file.path(orient_savdir,Index1)
+if(!dir.exists(newpath1)){
+  dir.create(newpath1)
+}
+Index2<-paste0("/Orient_2_",folder_name,"/ ")
+newpath2<-file.path(orient_savdir,Index2)
+if(!dir.exists(newpath2)){
+  dir.create(newpath2)
+}
+Index3<-paste0("/Orient_3_",folder_name,"/ ")
+newpath3<-file.path(orient_savdir,Index3)
+if(!dir.exists(newpath3)){
+  dir.create(newpath3)
+}
+
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -35,19 +51,19 @@ names(images) <- imgNames
 for (j in 1:length(read_images)){
   img_flip<-image_flip(read_images[[j]])
   analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[j]]),"_2.tif")
-  image_write(img_flip,path = paste0(orient_savdir1, analyzed_image1))
+  image_write(img_flip,path = paste0(newpath1, analyzed_image1))
 }
 
 for (j in 1:length(read_images)){
   img_flop<-image_flop(read_images[[j]])
   analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[j]]),"_3.tif")
-  image_write(img_flop,path = paste0(orient_savdir2, analyzed_image1))
+  image_write(img_flop,path = paste0(newpath2, analyzed_image1))
 }
 
 for (j in 1:length(read_images)){
   img_flop<-image_flop(read_images[[j]])
   img_flip<-image_flip(img_flop)
   analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[j]]),"_4.tif")
-  image_write(img_flip,path = paste0(orient_savdir3, analyzed_image1))
+  image_write(img_flip,path = paste0(newpath3, analyzed_image1))
 }
 
