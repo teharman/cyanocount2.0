@@ -73,9 +73,9 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Anabena/40X/Raw_Imgs/Batch_10")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Anabena/40X/Raw_Imgs/Batch_10")
-mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Anabena/40X/True_Mask/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Batch_3")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Batch_3")
+mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/True_Mask/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -97,14 +97,14 @@ rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 display(rgb.imgs)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 1, brightness = 0.35, increase=FALSE)
+grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness=1, increase=FALSE)
 display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.2)
+binary_img<-lapply(neg_imgs, binary, adj = 0.1)
 display(binary_img[[y]])
-imagesMapped <- lapply(binary_img, mapped, threshold = 0.2) #background intensity threshold adjustment
-img_watershed<-watershed_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+imagesMapped <- lapply(binary_img, mapped, threshold = 0.1) #background intensity threshold adjustment
+img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=150,tolerance=0.8,ext = 4,removeEdgeCells=TRUE)
 display(img_watershed)
 
 #Shiny UI cell selector
