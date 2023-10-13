@@ -29,13 +29,13 @@ point_select<-function(){
     extendShinyjs(text = jscode, functions = c("closeWindow")),
     sidebarLayout(
       sidebarPanel(
-        plotOutput("logo_img",width="75%",height="75%"),
+        plotOutput("logo_img",width="50%",height="50%"),
         h6(" "),
-        actionButton("close", "Close window",class = "btn-danger",style='height:75px;width:245px;font-size:140%',icon=icon("check"),style="display:center-align"),
-        actionButton("BRefresh","Refresh",class = "btn-success",style='height:75px;width:245px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
+        actionButton("close", "Close window",class = "btn-danger",style='height:50px;width:285px;font-size:140%',icon=icon("check"),style="display:center-align"),
+        actionButton("BRefresh","Refresh",class = "btn-success",style='height:50px;width:285px;font-size:140%',icon=icon("arrows-rotate"),style="display:center-align"),
         h3(" "),
         DT::dataTableOutput('data'),
-        width=4),
+        width=3,style = "font-size:75%"),
       mainPanel(
         plotOutput("current_image_plot", dblclick = "double_click", hover = "hover", width = "100%"),
         h3(" "),
@@ -55,7 +55,7 @@ point_select<-function(){
     output$logo_img<-renderPlot({
       loaded_logo
       return(loaded_logo)
-    }, height=150,width=500)
+    }, height=100,width=285)
 
     output$current_image_plot <- renderPlot({
       displayed_image <- create_image(loaded_image,
@@ -97,5 +97,5 @@ point_select<-function(){
   }
 
   runGadget(ui1, server1, viewer = dialogViewer("CyanoSCOPE Cell-Select Interface",
-                                                width = 1700, height = 2000))
+                                                width = 1400, height = 2000))
 }
