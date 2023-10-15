@@ -225,7 +225,7 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$load1,{
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
+    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
     beepr::beep(sound=1)
@@ -278,7 +278,7 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$run3,{
     shinyCatch({message("applying binary segmentation - please wait")}, prefix = '', position = "bottom-left")
-    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/ID_model_test/', custom_objects = NULL, compile = TRUE)
+    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
     watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
