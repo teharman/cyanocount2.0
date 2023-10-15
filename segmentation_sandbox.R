@@ -13,18 +13,19 @@ library(tfdatasets)
 library(unet)
 library(EBImage)
 library(platypus)
+library(tiff)
 #______________________________________________________________________________#
-setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/')
+setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/')
 data_dir<-path("segmentation_model/")
 
-tiff_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/TIFF_imgs")
-JPEG_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/segmentation_model/input_imgs/")
+tiff_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/TIFF_imgs")
+JPEG_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/input_imgs/")
 images <- list.files(tiff_dir, pattern = "tif", full.name = T)
 images_names <- list.files(tiff_dir, pattern = "tif", full.name = F)
 imgNames <- paste0(images_names)
 
 for (y in 1:length(images)){
-  img <- readTIFF(images[[y]])
+  img <- readTIFF(images[[1]])
   img_transposed <- aperm(img,c(2,1,3))
   rgb.img<-Image(img_transposed,colormode = Color)
   analyzed_image<-paste0(sub(").tif", replacement = ")", x=imgNames[[y]]),".png")
@@ -33,7 +34,7 @@ for (y in 1:length(images)){
 #______________________________________________________________________________#
 gc()
 
-setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/')
+setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/')
 data_dir<-path("segmentation_model/")
 
 input_dir<-data_dir / "input_imgs"
@@ -171,13 +172,13 @@ history<-model%>%
   fit_generator(
     datagen,
     epochs=10,
-    steps_per_epoch = 24,
+    steps_per_epoch = 44,
     verbose = 1
   )
 
-save_model_tf(model, "segmentation_model/updated_test_model/") #save model here
+save_model_tf(model, "segmentation_model/updated_test_model_2/") #save model here
 
-model<-load_model_tf('segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
+model<-load_model_tf('segmentation_model/updated_test_model_2/', custom_objects = NULL, compile = TRUE)
 
 test_img<-image_load("segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(1024,1024))
 test_img%>%image_to_array()%>%
