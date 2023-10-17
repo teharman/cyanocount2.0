@@ -9,12 +9,61 @@ library(tidyverse)
 library(fs)
 library(EBImage)
 library(magick)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
+#__________________________________________________________________________
+
+#Write from TIFF to PNG - save to main image folder
+
+cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Total_Color')
+images <- list.files(cell_tif, pattern = "tif", full.name = T)
+images_names <- list.files(cell_tif, pattern = "tif", full.name = F)
+read_images <- lapply(images, readTIFF)
+sav_dir <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/data/main_image_folder/')
+
+for(u in 1:length(images)){
+  cell_name <- images_names[[u]]
+  rgb.img<-Image(read_images[[u]],colormode = Color)
+  new_cell_name<-paste0(sub(".tiff", replacement = " ", x=cell_name),".png")
+  writeImage(rgb.img,files = paste0(sav_dir, new_cell_name))
+}
+
 #__________________________________________________________________________
 
 ####new model####
 
+original_dir<-path("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/data/main_image_folder")
+new_base_dir<-path("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model")
 
-setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models")
+make_subset_20X<-function(subset_name, start_index, end_index){
+  for (category in c("Anabaena", "F192", "F271")){
+    file_name<-glue::glue("{category}_20x_color ({start_index:end_index}).png")
+    dir_create(new_base_dir / subset_name / category)
+    file_copy(original_dir / file_name ,
+              new_base_dir / subset_name / category / file_name)
+  }
+}
+
+make_subset_40X<-function(subset_name, start_index, end_index){
+  for (category in c("Anabaena", "F192", "F271")){
+    file_name<-glue::glue("{category}_40x_color ({start_index:end_index}).png")
+    dir_create(new_base_dir / subset_name / category)
+    file_copy(original_dir / file_name ,
+              new_base_dir / subset_name / category / file_name)
+  }
+}
+
+make_subset_20X("train", start_index = 1, end_index = 750)
+make_subset_40X("train", start_index = 1, end_index = 750)
+
+make_subset_20X("validation", start_index = 751, end_index = 1250)
+make_subset_40X("validation", start_index = 751, end_index = 1250)
+
+make_subset_20X("test", start_index = 1251, end_index = 2000)
+make_subset_40X("test", start_index = 1251, end_index = 2000)
+
+setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models")
 
 model_label<-dir("ID_predict_model/train/")
 output_n<-length(model_label)
@@ -24,7 +73,8 @@ height<-150
 target_size<-c(width,height)
 rgb<-3
 
-path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/train"
+
+path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/train"
 train_data_gen<-image_data_generator(rescale=1/255,
                                      validation_split = 0.2)
 train_images<-flow_images_from_directory(path_train,
@@ -88,7 +138,7 @@ hist <- model %>% fit_generator(
   verbose = 2
 )
 
-path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/test"
+path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/test"
 
 test_data_gen <- image_data_generator(rescale = 1/255)
 test_images <- flow_images_from_directory(path_test,
@@ -101,7 +151,7 @@ test_images <- flow_images_from_directory(path_test,
 model %>% evaluate_generator(test_images,
                              steps = test_images$n/batch_size)
 
-test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/test/Anabaena/Anabaena_20X_color (378).png",
+test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/test/Anabaena/Anabaena_40X_color (1440).png",
                          target_size = target_size)
 
 x <- image_to_array(test_image)
@@ -114,6 +164,74 @@ pred$Probability <- paste(format(100*pred$Probability,2),"%")
 pred
 
 save_model_tf(model, "ID_predict_model/ID_model_test/") #save model here
+
+#_______________________________________________________________________
+#true vs. predicted
+
+classes <- test_images$classes %>%
+  factor() %>%
+  table() %>%
+  as_tibble()
+colnames(classes)[1] <- "value"
+
+indices <- test_images$class_indices %>%
+  as.data.frame() %>%
+  gather() %>%
+  mutate(value = as.character(value)) %>%
+  left_join(classes, by = "value")
+
+test_images$reset()
+
+predictions <- model %>%
+  predict_generator(
+    generator = test_images,
+    steps = as.integer(test_images$n)
+  ) %>%
+  round(digits = 2) %>%
+  as_tibble()
+
+colnames(predictions) <- indices$key
+
+predictions <- predictions %>%
+  mutate(truth_idx = as.character(test_images$classes)) %>%
+  left_join(indices, by = c("truth_idx" = "value"))
+
+pred_analysis <- predictions %>%
+  mutate(img_id = seq(1:test_images$n)) %>%
+  gather(pred_lbl, y, Anabaena:F271) %>%
+  group_by(img_id) %>%
+  filter(y == max(y)) %>%
+  arrange(img_id) %>%
+  group_by(key, n, pred_lbl) %>%
+  count()
+
+pred_analysis$percentage_pred <- pred_analysis$y * 100
+pred_analysis$group <- paste(pred_analysis$key, ".", pred_analysis$pred_lbl,".",pred_analysis$n)
+percentage_av <- pred_analysis %>% group_by(group) %>% tally()
+percentage_av <- percentage_av %>% separate(group, sep=" . ", into = c("key_main","pred_lbl","total_n"))
+percentage_av$total_n <- as.numeric(percentage_av$total_n)
+percentage_av$n <- as.numeric(percentage_av$n)
+percentage_av <- percentage_av %>% mutate(true_pred = (n/total_n)*100)
+
+
+p <- percentage_av %>%
+  ggplot(aes(x = key_main, y = pred_lbl,
+             fill = true_pred,
+             label = round(true_pred, 2))) +
+  geom_tile() +
+  scale_fill_continuous() +
+  scale_fill_gradient(low = "blue", high = "red") +
+  geom_text(color = "white") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = "True class",
+       y = "Predicted class",
+       fill = "Percentage\nof predictions",
+       title = "True v. predicted class labels",
+       subtitle = "Percentage of test images predicted for each label")
+p
+
+#_______________________________________________________________________
+
 
 tune_grid <- data.frame("learning_rate" = c(0.001,0.0001),
                         "dropoutrate" = c(0.3,0.2),
@@ -176,7 +294,9 @@ hist <- model %>% fit_generator(
 
 save_model_tf(model, "ID_predict_model/ID_model_test_mod/")
 
-test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Draft_Model/models/ID_predict_model/test/F192/F192_20X_color (393).png",
+model <- load_model_tf("ID_predict_model/ID_model_test_mod/")
+
+test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/test_imgs/20x_Img12/ 20x_Img12 _cell_10.tiff",
                          target_size = target_size)
 
 x <- image_to_array(test_image)
