@@ -225,7 +225,7 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$load1,{
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model/', custom_objects = NULL, compile = TRUE)
+    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_2/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
     beepr::beep(sound=1)
@@ -348,8 +348,9 @@ server_main = function(input, output, session) {
         x <- array_reshape(x, c(1, dim(x)))
         x <- x/255
         pred <- predict_model %>% predict(x)
-        pred <- data.frame("Species" = c("Anabaena","Microcystis"), "Probability" = t(pred))
-        pred <- pred[order(pred$Probability, decreasing=T),][1:2,]
+        model_label<-c("Anabaena","Microcystis","Dolichospermum")
+        pred <- data.frame("Species" = model_label, "Probability" = t(pred))
+        pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
         pred$Probability <- paste(format(100*pred$Probability,2,nsmall=2),"%")
         ID.input[nrow(ID.input) + 1, ] <<- c(file_ID, cell_num, pred$Species[[1]], pred$Probability[[1]])
       }
@@ -436,7 +437,7 @@ server_main = function(input, output, session) {
       rm(coord.mtx)
       rm(filter)
     }
-    ID.input <- cbind(ID.input,cell.coord)
+    ID.input <<- cbind(ID.input,cell.coord)
 
     test_ID.input <- subset(ID.input,file_ID==image_names[[1]])
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
@@ -507,7 +508,7 @@ server_main = function(input, output, session) {
         st_imgs_color<-export_cells[, , , k]
         analyzed_image1<-paste0(sub(".tif", replacement = " ", x=image_names[[h]]),"_cell_")
         analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-        analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),".tiff")
+        analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),".png")
         writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
       }
       csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
