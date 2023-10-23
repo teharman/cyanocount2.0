@@ -16,7 +16,7 @@ library(dplyr)
 
 #Write from TIFF to PNG - save to main image folder
 
-cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Total_Color')
+cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Total_Color')
 images <- list.files(cell_tif, pattern = "tif", full.name = T)
 images_names <- list.files(cell_tif, pattern = "tif", full.name = F)
 read_images <- lapply(images, readTIFF)
@@ -197,27 +197,20 @@ predictions <- predictions %>%
   left_join(indices, by = c("truth_idx" = "value"))
 
 pred_analysis <- predictions %>%
-  mutate(img_id = seq(1:test_images$n)) %>%
+  mutate(img_id = seq(1:test_images$nn)) %>%
   gather(pred_lbl, y, Anabaena:F271) %>%
   group_by(img_id) %>%
   filter(y == max(y)) %>%
   arrange(img_id) %>%
-  group_by(key, n, pred_lbl) %>%
+  group_by(key, nn, pred_lbl) %>%
   count()
 
-pred_analysis$percentage_pred <- pred_analysis$y * 100
-pred_analysis$group <- paste(pred_analysis$key, ".", pred_analysis$pred_lbl,".",pred_analysis$n)
-percentage_av <- pred_analysis %>% group_by(group) %>% tally()
-percentage_av <- percentage_av %>% separate(group, sep=" . ", into = c("key_main","pred_lbl","total_n"))
-percentage_av$total_n <- as.numeric(percentage_av$total_n)
-percentage_av$n <- as.numeric(percentage_av$n)
-percentage_av <- percentage_av %>% mutate(true_pred = (n/total_n)*100)
 
-
-p <- percentage_av %>%
-  ggplot(aes(x = key_main, y = pred_lbl,
-             fill = true_pred,
-             label = round(true_pred, 2))) +
+p <- pred_analysis %>%
+  mutate(percentage_pred = nn / n * 100) %>%
+  ggplot(aes(x = key, y = pred_lbl,
+             fill = percentage_pred,
+             label = round(percentage_pred, 2))) +
   geom_tile() +
   scale_fill_continuous() +
   scale_fill_gradient(low = "blue", high = "red") +
