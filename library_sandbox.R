@@ -21,14 +21,16 @@ greyscale_convert <- function(x, contrast = 1,brightness=0.1,increase=TRUE) {
     x2 <- x1 + brightness
     x3 <- x2[, , 1] + x2[, , 2] + x2[, , 3]
     x4 <- x3 / max(x3)
-    x5 <- normalize(x4, inputRange = c(0.1, 0.75))
+    x5 <- normalize(x4, inputRange = c(0.1, 0.75)
+                    )
     return(x5)
   }else{
     x1 <- x * contrast
     x2 <- x1 - brightness
     x3 <- x2[, , 1] + x2[, , 2] + x2[, , 3]
     x4 <- x3 / max(x3)
-    x5 <- normalize(x4, inputRange = c(0.1, 0.75))
+    x5 <- normalize(x4, inputRange = c(0.1,0.75)
+                    )
     return(x5)
   }
 }
@@ -73,9 +75,9 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_3_Batch_3")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_3_Batch_3")
-mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/True_Mask/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_1")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_1")
+mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/True_Mask/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
 
@@ -97,14 +99,14 @@ rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 display(rgb.imgs)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness=1, increase=FALSE)
+grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 1.25, increase=FALSE)
 display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
 binary_img<-lapply(neg_imgs, binary, adj = 0.1)
 display(binary_img[[y]])
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.1) #background intensity threshold adjustment
-img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=150,tolerance=0.8,ext = 4,removeEdgeCells=TRUE)
+img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
 display(img_watershed)
 
 #Shiny UI cell selector
@@ -128,7 +130,7 @@ seed_img<-single_cell_convert(seed.mtx.img)
 ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
 cmask<-propagate(neg_imgs[[y]],seeds=seed_img,mask=ctmask,lambda = 10^1)
 display(cmask)
-mask_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_mask.png")
+mask_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_mask.png")
 writeImage(cmask,files = paste0(mask_savdir, mask_image1))
 segmented<-paintObjects(cmask,rgb.imgs,col = c('black','orange'))
 display(segmented,all=TRUE)
@@ -169,9 +171,9 @@ if(remove_images == 'TRUE'){
   }
   for(k in 1:dim(st_blob_rm)[3]) {
     st_imgs_blob<-st_blob_rm[, , k]
-    analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
-    analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_blob_analyzed.tiff")
+    analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_frame")
+    analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
+    analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),"_blob_analyzed.tiff")
     features.blob2$frame_num[k]<-cbind(k)
     writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
@@ -187,9 +189,9 @@ if(remove_images == 'TRUE'){
   }
   for(k in 1:dim(st_img_rm)[4]) {
     st_imgs_color<-st_img_rm[, , , k]
-    analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
-    analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_color_analyzed.tiff")
+    analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_frame")
+    analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
+    analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),"_color_analyzed.tiff")
     features.img2$frame_num[k]<-cbind(k)
     writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
@@ -213,9 +215,9 @@ if(remove_images == 'TRUE'){
   }
   for(k in 1:dim(st_blob)[3]) {
     st_imgs_blob<-st_blob[, , k]
-    analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
-    analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_blob_analyzed.tiff")
+    analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_frame")
+    analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
+    analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),"_blob_analyzed.tiff")
     features.blob1$frame_num[k]<-cbind(k)
     writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
@@ -231,9 +233,9 @@ if(remove_images == 'TRUE'){
   }
   for(k in 1:dim(st_img)[4]) {
     st_imgs_color<-st_img[, , , k]
-    analyzed_image1<-paste0(sub(".tif", replacement = " ", x=imgNames[[y]]),"_frame")
-    analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-    analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),"_color_analyzed.tiff")
+    analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_frame")
+    analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
+    analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),"_color_analyzed.tiff")
     features.img1$frame_num[k]<-cbind(k)
     writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
   }
