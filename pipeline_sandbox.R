@@ -225,7 +225,7 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$load1,{
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_2/', custom_objects = NULL, compile = TRUE)
+    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_3/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
     beepr::beep(sound=1)
@@ -345,9 +345,9 @@ server_main = function(input, output, session) {
         cell_num <- z
         resize_img <- resize(cell_img[,,,z],w=150,h=150)
         x <- image_to_array(resize_img)
-        x <- array_reshape(x, c(1, dim(x)))
-        x <- x/255
-        pred <- predict_model %>% predict(x)
+        x1 <- Image(x,colormode = Color)
+        x2 <- array_reshape(x1, c(1, dim(x1)))
+        pred <- predict_model %>% predict(x2)
         model_label<-c("Anabaena","Microcystis","Dolichospermum")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
