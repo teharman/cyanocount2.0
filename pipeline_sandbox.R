@@ -40,23 +40,22 @@ ui_main = fluidPage(
   theme = shinytheme("cosmo"),
   sidebarPanel(navlistPanel(
     widths=c(12,12),
-    "CyanoSCOPE - Prediction and Enumeration UI",
+    "CyanoSCOPE - Prediction and Enumeration Interface",
     header = div("",img(src='pics/CyanoSCOPE_Logo.png',
-                        id = "CyanoSCOPE Logo", height = "125px",width = "320px",style = "position: relative; margin:-15px 0px; display:right-align;"))
+                        id = "CyanoSCOPE Logo", height = "140px",width = "320px",style = "position: relative; margin:-15px 0px; display:right-align;"))
   ),
   h3(" "),
   h3(" "),
   actionButton("close", "Close application",class = "btn-danger",style='height:35px;width:320px;font-size:140%',icon=icon("check"),style="display:center-align"),
   h3(" "),
-  "Developed by NOAA NCCOS HAB-F and UCSD Qualcomm Institute"),
+  "Developed by NOAA NCCOS HAB-Forecasting Branch"),
   mainPanel(navbarPage(
     title=h4("CyanoSCOPE Tools"),
     tabPanel(h6("1) Image Selection and Upload"),
              fluidRow(
-               shinyDirButton('path1','1) Select Images','Please select a folder containing images',FALSE,class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("folder-open")),
-               actionButton("update1","2) Update Data",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("arrows-rotate")),
-               actionButton("run1","3) Upload Images",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("upload")),
-               actionButton("update2","4) View Images",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("camera"))
+               shinyDirButton('path1','1) Select Images','Please select a folder containing images',FALSE,class = "btn-success",style='height:35px;width:182px;font-size:100%;display:center-align',icon=icon("folder-open")),
+               actionButton("update1","2) Update Data",class = "btn-success",style='height:35px;width:182px;font-size:100%;display:center-align',icon=icon("arrows-rotate")),
+               actionButton("run1","3) Upload Images",class = "btn-success",style='height:35px;width:182px;font-size:100%;display:center-align',icon=icon("upload"))
              ),
              h6(" "),
              fluidRow(
@@ -64,7 +63,7 @@ ui_main = fluidPage(
              ),
              fluidRow(
                column(5,
-                      wellPanel(DT::dataTableOutput('img_data'),width=3,style = "font-size:70%;height:400px")
+                      wellPanel(DT::dataTableOutput('img_data'),width=3,style = "font-size:70%;height:500px")
                ),
                column(7,
                       wellPanel(plotOutput("current_image_plot"),style = "padding: 0px;")
@@ -77,29 +76,11 @@ ui_main = fluidPage(
                       actionButton("next", "Next", icon=icon("arrow-right"),style='height:35px;width:150px;font-size:120%;display:center-align'))
              )
     ),
-    tabPanel(h6("2) Binary Segmentation Modeling"),
-             fluidRow(
-               actionButton("load1","1) Load Segmentation Model",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon("upload")),
-               actionButton("run2","2) Run Binary Segmentation",class = 'btn-success',style='height:35px;width:225px;font-size:100%;display:center-align',icon=icon('person-running'))
-             ),
-             h5(" "),
-             fluidRow(
-               column(12,
-                      wellPanel(plotOutput("current_image_plot1"),style = "padding: 0px;height:500px")
-                      )),
-             fluidRow(
-               column(7,offset=1,
-                      actionButton("previous1", "Previous", icon=icon("arrow-left"),style='height:35px;width:125px;font-size:100%;display:center-align')),
-               column(3,offset=1,
-                      actionButton("next1", "Next", icon=icon("arrow-right"),style='height:35px;width:125px;font-size:100%;display:center-align'))
-             )
-    ),
-    tabPanel(h6("3) ID Prediction Modeling"),
+    tabPanel(h6("2) ID Prediction Modeling"),
              fluidRow(
                actionButton("run3","1) Apply Segmentation",class = 'btn-success',style='height:35px;width:185px;font-size:90%;display:center-align',icon=icon('magnifying-glass')),
-               actionButton("update4","2) View Segmented Cells",class = "btn-success",style='height:35px;width:185px;font-size:90%;display:center-align',icon=icon("camera")),
-               actionButton("update3","3) Run ID Prediction",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("person-running")),
-               actionButton("update5","4) Update Data",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("arrows-rotate"))
+               actionButton("update3","2) Run ID Prediction",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("person-running")),
+               actionButton("update5","3) Update Data",class = "btn-success",style='height:35px;width:185px;font-size:100%;display:center-align',icon=icon("arrows-rotate"))
              ),
              h6(" "),
              fluidRow(
@@ -118,7 +99,7 @@ ui_main = fluidPage(
                column(2,
                       actionButton("previous2", "IMG_Previous", icon=icon("arrow-left"),style='height:35px;width:125px;font-size:90%;display:center-align')),
                column(2,
-                     actionButton("next2", "IMG_Next", icon=icon("arrow-right"),style='height:35px;width:125px;font-size:100%;display:center-align'))
+                      actionButton("next2", "IMG_Next", icon=icon("arrow-right"),style='height:35px;width:125px;font-size:100%;display:center-align'))
              ),
              fluidRow(
                column(2,
@@ -131,12 +112,11 @@ ui_main = fluidPage(
                       actionButton("next3", "Cell_Next", icon=icon("arrow-right"),style='height:35px;width:125px;font-size:100%;display:center-align'))
              )
     ),
-    tabPanel(h6("4) CyanoSCOPE analysis"),
+    tabPanel(h6("3) CyanoSCOPE analysis"),
              fluidRow(
                actionButton("run4","1) Generate Predict Images",class = 'btn-success',style='height:35px;width:180px;font-size:80%;display:center-align',icon=icon('wrench')),
-               actionButton("update6","2) View Predict Images",class = "btn-success",style='height:35px;width:185px;font-size:90%;display:center-align',icon=icon("camera")),
-               shinyDirButton('path2','3) Select Save Directory','Please select a folder to export data/images',FALSE,class = "btn-success",style='height:35px;width:180px;font-size:80%;display:center-align',icon=icon("folder-open")),
-               actionButton("save1","4) Save Images/Datasets",class = 'btn-success',style='height:35px;width:180px;font-size:90%;display:center-align',icon=icon('save'))
+               shinyDirButton('path2','2) Select Save Directory','Please select a folder to export data/images',FALSE,class = "btn-success",style='height:35px;width:180px;font-size:80%;display:center-align',icon=icon("folder-open")),
+               actionButton("save1","3) Save Images/Datasets",class = 'btn-success',style='height:35px;width:180px;font-size:90%;display:center-align',icon=icon('save'))
              ),
              h6(" "),
              fluidRow(
@@ -167,7 +147,7 @@ ui_main = fluidPage(
 server_main = function(input, output, session) {
   volumes=getVolumes()()
   ####server - tab 1####
-  images_list <<- data.frame(img_name = character(0))
+  images_list <<- data.frame(image_names = character(0))
   index <- reactiveVal(1)
   observe({
     shinyDirChoose(input,'path1',roots=volumes,session=session,filetypes=c('','txt'))
@@ -183,6 +163,7 @@ server_main = function(input, output, session) {
       }
     })
   })
+
   rv <- reactiveVal(images_list)
   dir <- reactive(input$path1)
   output$dir <- renderText({
@@ -195,12 +176,6 @@ server_main = function(input, output, session) {
     proxy=dataTableProxy("img_data")
     replaceData(proxy,images_list)
   })
-  observeEvent(input$run1, {
-    shinyCatch({message("uploading images - please wait")}, prefix = '', position = "bottom-left")
-    read_images <<- lapply(images, readTIFF)
-    shinyCatch({message("***image upload complete***")}, prefix = '', position = "bottom-left")
-    beepr::beep(sound=1)
-  })
 
   observeEvent(input[["previous"]], {
     index(max(index()-1, 1))
@@ -208,50 +183,33 @@ server_main = function(input, output, session) {
   observeEvent(input[["next"]], {
     index(min(index()+1, length(images)))
   })
-  observeEvent(input$update2,{
+
+  observeEvent(input$run1, {
+    shinyCatch({message("uploading images - please wait")}, prefix = '', position = "bottom-left")
+    Sys.sleep(3)
+    read_images <<- lapply(images, readTIFF)
+    shinyCatch({message("***image upload complete***")}, prefix = '', position = "bottom-left")
     output$current_image_plot <- renderPlot({
       loaded_image <- magick::image_ggplot(image_read(read_images[[index()]]))
       loaded_image
     },res=300,width=400,height=400)
+    beepr::beep(sound=1)
   })
+
+  #observeEvent(input[["previous"]], {
+  #  index(max(index()-1, 1))
+  #})
+  #observeEvent(input[["next"]], {
+  #  index(min(index()+1, length(images)))
+  #})
+  #observeEvent(input$update2,{
+  #  output$current_image_plot <- renderPlot({
+  #    loaded_image <- magick::image_ggplot(image_read(read_images[[index()]]))
+  #    loaded_image
+  #  },res=300,width=400,height=400)
+  #})
 
   ####server - tab 2####
-  index1 <- reactiveVal(1)
-  observeEvent(input[["previous1"]], {
-    index1(max(index1()-1, 1))
-  })
-  observeEvent(input[["next1"]], {
-    index1(min(index1()+1, length(mask_main)))
-  })
-  observeEvent(input$load1,{
-    shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_3/', custom_objects = NULL, compile = TRUE)
-    #change the file path once models are finalized and placed in the package directory
-    shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
-    beepr::beep(sound=1)
-  })
-  observeEvent(input$run2,{
-    shinyCatch({message("running segmentation model - please wait")}, prefix = '', position = "bottom-left")
-    test_img <- image_load(images[[1]],target_size = c(1024,1024))
-    new_array <- test_img %>% image_to_array() %>% array_reshape(.,c(1,dim(.))) %>% '/'(255)
-    mask_main <<- model %>% predict(new_array) %>%
-      get_masks(binary_colormap)
-    for (z in 2:length(read_images)){
-      test_img <- image_load(images[[z]],target_size = c(1024,1024))
-      new_array <- test_img %>% image_to_array() %>% array_reshape(.,c(1,dim(.))) %>% '/'(255)
-      mask <- model %>% predict(new_array) %>%
-        get_masks(binary_colormap)
-      mask_main <<- append(mask_main, mask)
-    }
-    shinyCatch({message("***segmentation prediction complete***")}, prefix = '', position = "bottom-left")
-    beepr::beep(sound=1)
-    output$current_image_plot1 <- renderPlot({
-      loaded_image1 <- magick::image_ggplot(image_read(mask_main[[index1()]]/255))
-      loaded_image1
-    },res=300,width=750,height=500)
-  })
-
-  ####server - tab 3####
   ID.input <<- data.frame(file_ID = character(0), cell_number = numeric(0), ID_estimate = character(0), Percent_estimate = numeric(0))
   index2 <- reactiveVal(1)
   index3 <- reactiveVal(1)
@@ -276,10 +234,37 @@ server_main = function(input, output, session) {
   output$seg_num <- renderText({
     paste('Cell #: ',index3())
   })
+
   observeEvent(input$run3,{
+    shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
+    Sys.sleep(3)
+    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_3/', custom_objects = NULL, compile = TRUE)
+    #change the file path once models are finalized and placed in the package directory
+    shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
+
+    Sys.sleep(3)
+    shinyCatch({message("running segmentation model - please wait")}, prefix = '', position = "bottom-left")
+    Sys.sleep(3)
+
+    test_img <- image_load(images[[1]],target_size = c(1024,1024))
+    new_array <- test_img %>% image_to_array() %>% array_reshape(.,c(1,dim(.))) %>% '/'(255)
+    mask_main <<- model %>% predict(new_array) %>%
+      get_masks(binary_colormap)
+    for (z in 2:length(read_images)){
+      test_img <- image_load(images[[z]],target_size = c(1024,1024))
+      new_array <- test_img %>% image_to_array() %>% array_reshape(.,c(1,dim(.))) %>% '/'(255)
+      mask <- model %>% predict(new_array) %>%
+        get_masks(binary_colormap)
+      mask_main <<- append(mask_main, mask)
+    }
+    shinyCatch({message("***segmentation prediction complete***")}, prefix = '', position = "bottom-left")
+
+    Sys.sleep(3)
     shinyCatch({message("applying binary segmentation - please wait")}, prefix = '', position = "bottom-left")
+    Sys.sleep(3)
+
     predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
-    watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
+    watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 100, tolerance= 0.4, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
         image1 <- fillHull(image)
@@ -309,7 +294,7 @@ server_main = function(input, output, session) {
     mask <- mask[,,1]
     img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
     ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-    seed_mask <- single_cell_convert(ctmask)
+    seed_mask <- single_cell_convert(ctmask,w=17,h=17,offset=0.001,areathresh=100,tolerance=1,ext = 1)
     cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
     cmask1 <- array_reshape(cmask,c(dim(cmask),1))
     segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
@@ -322,7 +307,7 @@ server_main = function(input, output, session) {
       rgb.imgs <- Image(img_array,colormode = Color)
       mask <- abind(mask_main[[z]])
       mask <- mask[,,1]
-      img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=5,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+      img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
       ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
       seed_mask <- single_cell_convert(ctmask)
       cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
@@ -334,10 +319,27 @@ server_main = function(input, output, session) {
       cell_seg <<- append(cell_seg,seg_cell_test)
     }
     shinyCatch({message("***segmentation applied***")}, prefix = '', position = "bottom-left")
+
+    output$current_image_plot2 <- renderPlot({
+      img_select <<- (cell_seg[[index2()]])
+      loaded_image2 <- magick::image_ggplot(image_read(img_select[,,,index3()]))
+      loaded_image2
+    },res=300,width=150,height=150)
+
     beepr::beep(sound=1)
   })
+
   observeEvent(input$update3,{
     shinyCatch({message("running ID prediction model - please wait")}, prefix = '', position = "bottom-left")
+    sigfig <- function(vec, n=3){
+      ### function to round values to N significant digits
+      # input:   vec       vector of numeric
+      #          n         integer is the required sigfig
+      # output:  outvec    vector of numeric rounded to N sigfig
+
+      formatC(signif(vec,digits=n))
+
+    }
     for(k in 1:length(cell_seg)) {
       cell_img <- cell_seg[[k]]
       file_ID <- image_names[[k]]
@@ -350,14 +352,16 @@ server_main = function(input, output, session) {
         pred <- predict_model %>% predict(x2)
         model_label<-c("Anabaena","Microcystis","Dolichospermum")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
-        pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
-        pred$Probability <- paste(format(100*pred$Probability,2,nsmall=2),"%")
+        pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
+        pred$Probability <- (100*pred$Probability)
+        pred$Probability <- paste(formatC(pred$Probability, digits = 3, format = "f"),"%")
         ID.input[nrow(ID.input) + 1, ] <<- c(file_ID, cell_num, pred$Species[[1]], pred$Probability[[1]])
       }
     }
     shinyCatch({message("***ID prediction complete***")}, prefix = '', position = "bottom-left")
     beepr::beep(sound=1)
   })
+
   rv1 <- reactiveVal(ID.input)
   onclick("update5",{
     proxy=dataTableProxy("predict_data")
@@ -366,16 +370,10 @@ server_main = function(input, output, session) {
   output$predict_data <- DT::renderDataTable ({
     DT::datatable(rv1(), editable = TRUE)
   })
-  observeEvent(input$update4,{
-    output$current_image_plot2 <- renderPlot({
-      img_select <<- (cell_seg[[index2()]])
-      loaded_image2 <- magick::image_ggplot(image_read(img_select[,,,index3()]))
-      loaded_image2
-    },res=300,width=150,height=150)
-  })
 
-  ####server - tab 4####
+  ####server - tab 3####
   cell.coord <<- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
+  cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
   index5 <- reactiveVal(1)
   observeEvent(input[["previous4"]], {
     index5(max(index5()-1, 1))
@@ -471,14 +469,15 @@ server_main = function(input, output, session) {
       estimate_list <<- append(estimate_list,estimate_list1)
     }
     shinyCatch({message("***prediction images generated***")}, prefix = '', position = "bottom-left")
-    beepr::beep(sound=1)
-  })
-  observeEvent(input$update6,{
+
     output$current_image_plot3 <- renderPlot({
       loaded_image4 <- plot(estimate_list[[index5()]])
       loaded_image4
     },res=300,width=750,height=450)
+
+    beepr::beep(sound=1)
   })
+
   observe({
     shinyDirChoose(input,'path2',roots=volumes,session=session,filetypes=c('','txt'))
     dirname_path2 <- shiny::reactive({shinyFiles::parseDirPath(volumes,input$path2)})
@@ -515,6 +514,19 @@ server_main = function(input, output, session) {
       export_ID.input <- subset(ID.input,file_ID==image_names[[h]])
       write.csv(export_ID.input, paste0(newpath, csv_save)) #Change this CSV file name
       rm(export_ID.input)
+
+      #count_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+      #microcystis_freq<-colSums(count_ID.input=='Microcystis')
+      #microcystis_freq<-microcystis_freq[[3]]
+      #dolicho_freq<-colSums(count_ID.input=='Dolichospermum')
+      #dolicho_freq<-dolicho_freq[[3]]
+      #anabaena_freq<-colSums(count_ID.input=='Anabaena')
+      #anabaena_freq<-anabaena_freq[[3]]
+      #cell.count[nrow(cell.count) + 1, ] <<- c(image_names[[h]], microcystis_freq, anabaena_freq, dolicho_freq)
+      #rm(count_ID.input)
+      #rm(microcystis_freq)
+      #rm(anabaena_freq)
+      #rm(dolichospermum_freq)
 
       test_img <- image_load(images[[h]],target_size = c(1024,1024))
       img_array <- test_img %>% image_to_array() %>% '/'(255)
