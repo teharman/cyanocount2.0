@@ -16,7 +16,7 @@ library(dplyr)
 
 #Write from TIFF to PNG - save to main image folder
 
-cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Total_Color')
+cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/40X/Total_Color')
 images <- list.files(cell_tif, pattern = "tif", full.name = T)
 images_names <- list.files(cell_tif, pattern = "tif", full.name = F)
 read_images <- lapply(images, readTIFF)
@@ -75,8 +75,13 @@ rgb<-3
 
 
 path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/train"
+path_valid<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/validation"
 train_data_gen<-image_data_generator(rescale=1/255,
-                                     validation_split = 0.2)
+                                     #validation_split = 0.2
+                                     )
+valid_data_gen<-image_data_generator(rescale=1/255,
+                                     #validation_split = 0.2
+)
 train_images<-flow_images_from_directory(path_train,
                                          train_data_gen,
                                          subset="training",
@@ -85,9 +90,8 @@ train_images<-flow_images_from_directory(path_train,
                                          shuffle = F,
                                          classes = model_label,
                                          seed = 2021)
-validation_images <- flow_images_from_directory(path_train,
-                                                train_data_gen,
-                                                subset = 'validation',
+validation_images <- flow_images_from_directory(path_valid,
+                                                valid_data_gen,
                                                 target_size = target_size,
                                                 class_mode = "categorical",
                                                 classes = model_label,
@@ -129,13 +133,13 @@ model
 batch_size<-32
 epochs<-6
 
-hist <- model %>% fit_generator(
+hist <- model %>% fit(
   train_images,
   steps_per_epoch = train_images$n %/% batch_size,
   epochs = epochs,
   validation_data = validation_images,
   validation_steps = validation_images$n %/% batch_size,
-  verbose = 2
+  verbose = 1
 )
 
 path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/test"
@@ -148,8 +152,8 @@ test_images <- flow_images_from_directory(path_test,
                                           classes = model_label,
                                           shuffle = F,
                                           seed = 2021)
-model %>% evaluate_generator(test_images,
-                             steps = test_images$n/batch_size)
+model %>% evaluate(test_images,
+                   steps = test_images$n/batch_size)
 
 test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/test/Anabaena/Anabaena_40X_color (1440).png",
                          target_size = target_size)
@@ -164,6 +168,7 @@ pred$Probability <- paste(format(100*pred$Probability,2),"%")
 pred
 
 save_model_tf(model, "ID_predict_model/ID_model_test/") #save model here
+model <- load_model_tf("ID_predict_model/ID_model_test/")
 
 #_______________________________________________________________________
 #true vs. predicted
@@ -182,9 +187,9 @@ indices <- test_images$class_indices %>%
 
 test_images$reset()
 
-predictions <- model %>%
-  predict_generator(
-    generator = test_images,
+predictions <-
+  predict(model,
+    test_images,
     steps = as.integer(test_images$n)
   ) %>%
   round(digits = 2) %>%
@@ -197,31 +202,54 @@ predictions <- predictions %>%
   left_join(indices, by = c("truth_idx" = "value"))
 
 pred_analysis <- predictions %>%
-  mutate(img_id = seq(1:test_images$nn)) %>%
+  mutate(img_id = seq(1:test_images$n)) %>%
   gather(pred_lbl, y, Anabaena:F271) %>%
   group_by(img_id) %>%
   filter(y == max(y)) %>%
   arrange(img_id) %>%
-  group_by(key, nn, pred_lbl) %>%
+  group_by(key, n, pred_lbl) %>%
   count()
 
+pred_analysis <- pred_analysis %>%
+  mutate(key = recode(key,
+                        Anabaena = 'Anabaena',
+                        F192 = 'Microcystis',
+                        F271 = 'Dolichospermum'))
+
+pred_analysis <- pred_analysis %>%
+  mutate(pred_lbl = recode(pred_lbl,
+                      Anabaena = 'Anabaena',
+                      F192 = 'Microcystis',
+                      F271 = 'Dolichospermum'))
 
 p <- pred_analysis %>%
   mutate(percentage_pred = nn / n * 100) %>%
   ggplot(aes(x = key, y = pred_lbl,
              fill = percentage_pred,
-             label = round(percentage_pred, 2))) +
+             label = paste0(round(percentage_pred, 2),"%"))) +
   geom_tile() +
   scale_fill_continuous() +
   scale_fill_gradient(low = "blue", high = "red") +
-  geom_text(color = "white") +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  geom_text(color = "white",size=10) +
   labs(x = "True class",
        y = "Predicted class",
-       fill = "Percentage\nof predictions",
+       fill = "Percentage\nof \npredictions",
        title = "True v. predicted class labels",
-       subtitle = "Percentage of test images predicted for each label")
+       subtitle = "Percentage of test images predicted for each label")+
+  theme(
+    plot.margin=unit(c(1,1,1,1),"cm"),
+    plot.title = element_text(size=35),
+    plot.subtitle = element_text(size=20),
+    axis.title.x = element_text(size=25,vjust=-2),
+    axis.title.y = element_text(size=25,vjust=4),
+    axis.text.x = element_text(size=20),
+    axis.text.y = element_text(size=20,angle=45,hjust=1,vjust=-1),
+    legend.text = element_text(size=20),
+    legend.title = element_text(size=20))
+
+png("Predict_Model_Output_01.png", height = 25, width = 30, units = 'cm', res = 300)
 p
+dev.off()
 
 #_______________________________________________________________________
 
@@ -248,7 +276,7 @@ for (i in 1:length(tune_grid$learning_rate)){
         validation_data = validation_images,
         validation_steps = validation_images$n %/%
           batch_size,
-        verbose = 2
+        verbose = 1
       )
 
       #Save model configurations
@@ -282,7 +310,7 @@ hist <- model %>% fit_generator(
   epochs = epochs,
   validation_data = validation_images,
   validation_steps = validation_images$n %/% batch_size,
-  verbose = 2
+  verbose = 1
 )
 
 save_model_tf(model, "ID_predict_model/ID_model_test_mod/")
