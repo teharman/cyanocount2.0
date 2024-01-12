@@ -75,8 +75,8 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
 gc()
 
 #Change directories/Import images
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_1")
-image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_1")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_2")
+image_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_2")
 mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/True_Mask/")
 images <- list.files(img_dir, pattern = "tif", full.name = T)
 images_names <- list.files(img_dir, pattern = "tif", full.name = F)
@@ -87,7 +87,7 @@ img_transposed <- lapply(read_images,aperm,c(2,1,3))
 names(images) <- imgNames
 
 #img number
-y<-10
+y<-3
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -99,7 +99,7 @@ rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 display(rgb.imgs)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 1.25, increase=FALSE)
+grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 1.5, increase=FALSE)
 display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 display(neg_imgs[[y]])
