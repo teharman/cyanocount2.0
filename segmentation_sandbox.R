@@ -18,19 +18,41 @@ library(tiff)
 setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/')
 data_dir<-path("segmentation_model/")
 
-tiff_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/TIFF_imgs")
-JPEG_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/input_imgs/")
-images <- list.files(tiff_dir, pattern = "tif", full.name = T)
-images_names <- list.files(tiff_dir, pattern = "tif", full.name = F)
-imgNames <- paste0(images_names)
+image_tif <- ('D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/Raw_Imgs/Orient_3_Batch_7/')
+images <- list.files(image_tif, pattern = "tif", full.name = T)
+images_names <- list.files(image_tif, pattern = "tif", full.name = F)
+read_images <- lapply(images, readTIFF)
+sav_dir <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/01_images/input_imgs/')
 
-for (y in 1:length(images)){
-  img <- readTIFF(images[[y]])
-  img_transposed <- aperm(img,c(2,1,3))
-  rgb.img<-Image(img_transposed,colormode = Color)
-  analyzed_image<-paste0(sub(").tif", replacement = ")", x=imgNames[[y]]),".png")
-  writeImage(rgb.img,files = paste0(JPEG_savdir, analyzed_image))
+for(u in 1:length(images)){
+  cell_name <- images_names[[u]]
+  img_transposed <- lapply(read_images,aperm,c(2,1,3))
+  rgb.img<-Image(img_transposed[[u]],colormode = Color)
+  new_cell_name<-paste0(sub(".tif", replacement = " ", x=cell_name),".png")
+  writeImage(rgb.img,files = paste0(sav_dir, new_cell_name))
 }
+
+image_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/40X/True_Mask/')
+images <- list.files(image_tif, pattern = "png", full.name = T)
+images_names <- list.files(image_tif, pattern = "png", full.name = F)
+read_images <- lapply(images, readPNG)
+sav_dir <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/01_images/true_mask/')
+
+for(u in 1:length(images)){
+  cell_name <- images_names[[u]]
+  if(length(dim(read_images[[u]]))==2){
+    img_transposed <- aperm(read_images[[u]],c(2,1))
+    rgb.img<-Image(img_transposed,colormode = Color)
+    new_cell_name<-paste0(sub(".png", replacement = " ", x=cell_name),".png")
+    writeImage(rgb.img,files = paste0(sav_dir, new_cell_name))
+  } else if(length(dim(read_images[[u]]))==3){
+    img_transposed <- aperm(read_images[[u]],c(2,1,3))
+    rgb.img<-Image(img_transposed,colormode = Color)
+    new_cell_name<-paste0(sub(".png", replacement = " ", x=cell_name),".png")
+    writeImage(rgb.img,files = paste0(sav_dir, new_cell_name))
+  }
+}
+
 #______________________________________________________________________________#
 gc()
 
