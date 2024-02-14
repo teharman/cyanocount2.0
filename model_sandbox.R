@@ -16,16 +16,16 @@ library(dplyr)
 
 #Write from TIFF to PNG - save to main image folder
 
-cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/40X/Total_Color')
+cell_tif <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F192/20X/Total_Color')
 images <- list.files(cell_tif, pattern = "tif", full.name = T)
 images_names <- list.files(cell_tif, pattern = "tif", full.name = F)
 read_images <- lapply(images, readTIFF)
-sav_dir <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/data/main_image_folder/')
+sav_dir <- ('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/main_image_folder/')
 
 for(u in 1:length(images)){
   cell_name <- images_names[[u]]
   rgb.img<-Image(read_images[[u]],colormode = Color)
-  new_cell_name<-paste0(sub(".tiff", replacement = " ", x=cell_name),".png")
+  new_cell_name<-paste0(sub(".tif", replacement = " ", x=cell_name),".png")
   writeImage(rgb.img,files = paste0(sav_dir, new_cell_name))
 }
 
