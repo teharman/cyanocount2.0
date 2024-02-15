@@ -1,15 +1,13 @@
-# CyanoSCOPE
+# CyanoSCOPE - ***UNDER CONSTRUCTION***
 
 ## Overview:
 R project file containing tools for CyanoSCOPE - a new deep-learning/AI tool for identifying and enumerating cyanobacteria. 
 
 This tool utilizies TensorFlow, Keras, and UNet neural network models for segmentation and identification purposes. Enumeration capabilities are achieved using the ***cellcount*** package: https://github.com/teharman/cellcount_main
 
-*Developed by NOAA NCCOS - SDI - HAB Forecasting Branch*
-
-***UNDER CONSTRUCTION***
-
 Refer any errors or issues to: tyler.harman@noaa.gov
+
+*Developed by NOAA NCCOS - SDI - HAB Forecasting Branch*
 
 ## Legal Disclaimer:
 This repository is a scientific product and is not official communication of the National Oceanic and
