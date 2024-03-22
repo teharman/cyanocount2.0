@@ -21,8 +21,8 @@ library(cyanocount2.0)
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs/Batch_7")
-orient_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/20X/Raw_Imgs")
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/40X/Raw_Imgs/Batch_8")
+orient_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/40X/Raw_Imgs")
 folder_name<-basename(img_dir)
 
 Index1<-paste0("/Orient_1_",folder_name,"/")
