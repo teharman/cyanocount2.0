@@ -1,0 +1,43 @@
+---
+title: "Introduction to *CyanoSCOPE* - Draft vignette"
+author: 
+  - name: Tyler E. Harman 
+    affiliation: Consolidated Safety Services (Contracted to NOAA NCCOS), Fairfax, VA 22031, USA
+    affiliation_email: tyler.harman@noaa.gov
+    orcid_id: 0000-0001-5007-8170
+    
+  - name: D. Ransom Hardison, PhD
+    affiliation: National Oceanic and Atmospheric Administration, National Centers for Coastal Ocean Science,     Beaufort, NC 28516, USA
+    
+  - name: William C. Holland
+    affiliation: National Oceanic and Atmospheric Administration, National Centers for Coastal Ocean Science,     Beaufort, NC 28516, USA
+  
+  - name: Kaytee Pokrzywinski, PhD
+    affiliation: National Oceanic and Atmospheric Administration, National Centers for Coastal Ocean Science, Beaufort, NC 28516, USA
+    orcid_id: 0000-0003-1523-9930
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+# Summary:
+
+# Getting Started:
+
+- Downloading/installing package from GitHub repo
+- Downloading Python
+- Communication between Python and R via reticulate
+
+# Important Notes:
+
+- Important/required packages (version #'s)
+- Types of CNN models used
+- Description of variables used in model construction
+- Current model outputs (prediction IDs, etc.)
+
+# Overview of CyanoSCOPE UI
+
+- Upload data
+- Applying models
+- Interpreting results
+- Storage of results
+- Practice data
