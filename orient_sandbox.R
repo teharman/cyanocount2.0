@@ -21,8 +21,8 @@ library(cyanocount2.0)
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/40X/Raw_Imgs/Batch_8")
-orient_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Edenton_Anabaena/40X/Raw_Imgs")
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Batch_1")
+orient_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs")
 folder_name<-basename(img_dir)
 
 Index1<-paste0("/Orient_1_",folder_name,"/")
@@ -49,7 +49,7 @@ if(grepl("(?i).jpg", images[[2]])==TRUE){
   imgNames <- paste0(images_names)
   read_images <- lapply(images, image_read)
   names(images) <- imgNames
-} else if (grepl("(?i).tiff", images[[2]])==TRUE){
+} else if (grepl("(?i).tif", images[[2]])==TRUE){
   images <- list.files(img_dir, pattern = "tif", full.name = T)
   images_names <- list.files(img_dir, pattern = "tif", full.name = F)
   imgNames <- paste0(images_names)
@@ -74,7 +74,7 @@ if(grepl("(?i).jpg", images_names[[1]])==TRUE){
     analyzed_image1<-paste0(sub(".jpg", replacement = "", x=imgNames[[j]]),"_4.jpg")
     image_write(img_flip,path = paste0(newpath3, analyzed_image1))
   }
-} else if (grepl("(?i).tiff", images_names[[1]])==TRUE){
+} else if (grepl("(?i).tif", images_names[[1]])==TRUE){
   for (j in 1:length(read_images)){
     img_flip<-image_flip(read_images[[j]])
     analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[j]]),"_2.tif")
