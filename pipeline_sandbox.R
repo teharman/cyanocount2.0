@@ -28,6 +28,8 @@ library(shinythemes)
 library(cyanocount2.0)
 library(RSAGA)
 library(spsComps)
+library(stringr)
+library(pbapply)
 #___________________________________________________________#
 
 jscode <- "shinyjs.closeWindow = function() { window.close(); }"
@@ -187,7 +189,7 @@ server_main = function(input, output, session) {
   observeEvent(input$run1, {
     shinyCatch({message("uploading images - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
-    read_images <<- lapply(images, readTIFF)
+    read_images <<- lapply(images, readImage)
     shinyCatch({message("***image upload complete***")}, prefix = '', position = "bottom-left")
     output$current_image_plot <- renderPlot({
       loaded_image <- magick::image_ggplot(image_read(read_images[[index()]]))
@@ -268,7 +270,7 @@ server_main = function(input, output, session) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
         image1 <- fillHull(image)
-        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
         nf <- computeFeatures.shape(image2)
         nr <- which(nf[, "s.area"] < areathresh)
         image3 <- rmObjects(image2, nr)
@@ -280,12 +282,21 @@ server_main = function(input, output, session) {
       } else{
         image <- thresh(x, w = w, h = h, offset = offset)
         image1 <- fillHull(image)
-        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
         nf <- computeFeatures.shape(image2)
         nr <- which(nf[, "s.area"] < areathresh)
         image3 <- rmObjects(image2, nr)
         return(image3)
       }
+    }
+    single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1) {
+      image <- thresh(x, w = w, h = h, offset = offset)
+      image1 <- fillHull(image)
+      image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
+      nf <- computeFeatures.shape(image2)
+      nr <- which(nf[, "s.area"] < areathresh)
+      image3 <- rmObjects(image2, nr)
+      return(image3)
     }
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
     img_array <- test_img %>% image_to_array() %>% '/'(255)
@@ -345,7 +356,7 @@ server_main = function(input, output, session) {
       file_ID <- image_names[[k]]
       for(z in 1:dim(cell_img)[4]){
         cell_num <- z
-        resize_img <- resize(cell_img[,,,z],w=150,h=150)
+        resize_img <- EBImage::resize(cell_img[,,,z],w=150,h=150)
         x <- image_to_array(resize_img)
         x1 <- Image(x,colormode = Color)
         x2 <- array_reshape(x1, c(1, dim(x1)))
@@ -387,7 +398,7 @@ server_main = function(input, output, session) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
         image1 <- fillHull(image)
-        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
         nf <- computeFeatures.shape(image2)
         nr <- which(nf[, "s.area"] < areathresh)
         image3 <- rmObjects(image2, nr)
@@ -399,12 +410,21 @@ server_main = function(input, output, session) {
       } else{
         image <- thresh(x, w = w, h = h, offset = offset)
         image1 <- fillHull(image)
-        image2 <- watershed(distmap(image1), tolerance = tolerance, ext = ext)
+        image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
         nf <- computeFeatures.shape(image2)
         nr <- which(nf[, "s.area"] < areathresh)
         image3 <- rmObjects(image2, nr)
         return(image3)
       }
+    }
+    single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1) {
+      image <- thresh(x, w = w, h = h, offset = offset)
+      image1 <- fillHull(image)
+      image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
+      nf <- computeFeatures.shape(image2)
+      nr <- which(nf[, "s.area"] < areathresh)
+      image3 <- rmObjects(image2, nr)
+      return(image3)
     }
     for(k in 1:length(cell_seg)) {
       cell_img <- cell_seg[[k]]
@@ -413,14 +433,14 @@ server_main = function(input, output, session) {
       rgb.imgs <- Image(img_array,colormode = Color)
       mask <- abind(mask_main[[k]])
       mask <- mask[,,1]
-      display(mask)
+      #display(mask)
       img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=0,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
       ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
       seed_mask <- single_cell_convert(ctmask)
-      display(seed_mask)
+      #display(seed_mask)
       cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
       segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
-      display(segmented)
+      #display(segmented)
       coord.mtx <- RSAGA::grid.to.xyz(cmask)
       filter <- filter(coord.mtx,z>0)
       for(j in 1:dim(cell_img)[4]){
