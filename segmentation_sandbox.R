@@ -57,7 +57,7 @@ for(u in 1:length(images)){
 gc()
 
 setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/')
-data_dir<-path("segmentation_model/")
+data_dir<-path("segmentation_model/01_images")
 
 input_dir<-data_dir / "input_imgs"
 target_dir<-data_dir / "true_mask"
@@ -120,8 +120,8 @@ training_dataset <- training_dataset %>%
   ))
 
 example <- training_dataset %>% as_iterator() %>% iter_next()
-example$img %>% as.array() %>% display()
-example$mask %>% as.array() %>% display()
+example$img %>% as.array() %>% EBImage::display()
+example$mask %>% as.array() %>% EBImage::display()
 
 
 create_dataset <- function(data, train, batch_size = 8L) {
@@ -202,7 +202,7 @@ save_model_tf(model, "segmentation_model/updated_test_model_3/") #save model her
 
 model<-load_model_tf('segmentation_model/updated_test_model_3/', custom_objects = NULL, compile = TRUE)
 
-test_img<-image_load("segmentation_model/input_imgs/20x_F192 (19).png",target_size = c(1024,1024))
+test_img<-image_load("segmentation_model/01_image/input_imgs/F192_AS_20X_Image005_4.png",target_size = c(1024,1024))
 test_img%>%image_to_array()%>%
   '/'(255)%>%
   as.raster()%>%
