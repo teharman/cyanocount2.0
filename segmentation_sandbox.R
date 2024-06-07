@@ -59,7 +59,7 @@ gc()
 setwd('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/')
 data_dir<-path("segmentation_model/01_images")
 
-input_dir<-data_dir / "input_imgs"
+input_dir<-data_dir / "input_images"
 target_dir<-data_dir / "true_mask"
 
 model <- unet(input_shape = c(1024, 1024, 3))
@@ -178,7 +178,7 @@ model %>% compile(
 )
 
 datagen<-segmentation_generator(
-  path = "segmentation_model",
+  path = data_dir,
   colormap = binary_colormap,
   only_images = F,
   mode = "dir",
@@ -186,21 +186,22 @@ datagen<-segmentation_generator(
   net_w = 1024,
   grayscale = F,
   batch_size = 8,
+  scale = 0.1/255,
   shuffle = F,
-  subdirs = c("/input_imgs","/true_mask")
+  subdirs = c("/input_images","/true_mask")
 )
 
 history<-model%>%
   fit_generator(
     datagen,
-    epochs=10,
-    steps_per_epoch = 63,
+    epochs=6,
+    steps_per_epoch = 162,
     verbose = 1
   )
 
-save_model_tf(model, "segmentation_model/updated_test_model_3/") #save model here
+save_model_tf(model, "segmentation_model/updated_test_model_4/") #save model here
 
-model<-load_model_tf('segmentation_model/updated_test_model_3/', custom_objects = NULL, compile = TRUE)
+model<-load_model_tf('segmentation_model/updated_test_model_4/', custom_objects = NULL, compile = TRUE)
 
 test_img<-image_load("segmentation_model/01_image/input_imgs/F192_AS_20X_Image005_4.png",target_size = c(1024,1024))
 test_img%>%image_to_array()%>%
