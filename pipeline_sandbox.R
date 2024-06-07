@@ -189,7 +189,7 @@ server_main = function(input, output, session) {
   observeEvent(input$run1, {
     shinyCatch({message("uploading images - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
-    read_images <<- lapply(images, readImage)
+    read_images <<- lapply(images, EBImage::readImage)
     shinyCatch({message("***image upload complete***")}, prefix = '', position = "bottom-left")
     output$current_image_plot <- renderPlot({
       loaded_image <- magick::image_ggplot(image_read(read_images[[index()]]))
@@ -238,9 +238,11 @@ server_main = function(input, output, session) {
   })
 
   observeEvent(input$run3,{
+    cell.coord <<- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
+    cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_3/', custom_objects = NULL, compile = TRUE)
+    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_5/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
 
@@ -265,7 +267,7 @@ server_main = function(input, output, session) {
     shinyCatch({message("applying binary segmentation - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
 
-    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
+    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_ASLO_test/ID_model_test/', custom_objects = NULL, compile = TRUE)
     watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 100, tolerance= 0.4, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
@@ -303,32 +305,68 @@ server_main = function(input, output, session) {
     rgb.imgs <- Image(img_array,colormode = Color)
     mask <- abind(mask_main[[1]])
     mask <- mask[,,1]
-    img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+    img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+    final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
+    EBImage::display(final_img)
+    count_cells(img_watershed)
     ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-    seed_mask <- single_cell_convert(ctmask,w=17,h=17,offset=0.001,areathresh=100,tolerance=1,ext = 1)
+    seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4)
+    final_img <- count_images(seed_mask,normalize = T, removeEdgeCells = T)
+    EBImage::display(final_img)
+    count_cells(img_watershed)
     cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
     cmask1 <- array_reshape(cmask,c(dim(cmask),1))
     segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
+    EBImage::display(segmented)
     st_img <- stackObjects(cmask,rgb.imgs)
     st_img_test <- Image(st_img)
+    EBImage::display(st_img_test)
     cell_seg <<- list(st_img_test)
+    coord.mtx <- RSAGA::grid.to.xyz(cmask)
+    filter <- filter(coord.mtx,z>0)
+    for(u in 1:dim(st_img_test)[4]){
+      filter.mtx <- subset(filter,z==u)
+      xmin <- min(filter.mtx$x)-1
+      xmax <- max(filter.mtx$x)+1
+      ymin <- min(filter.mtx$y)-1
+      ymax <- max(filter.mtx$y)+1
+      cell.coord[nrow(cell.coord) + 1, ] <<- c(xmin, xmax, ymin, ymax)
+      rm(filter.mtx)
+    }
+    rm(coord.mtx)
+    rm(filter)
     for (z in 2:length(read_images)){
       test_img <- image_load(images[[z]],target_size = c(1024,1024))
       img_array <- test_img %>% image_to_array() %>% '/'(255)
       rgb.imgs <- Image(img_array,colormode = Color)
       mask <- abind(mask_main[[z]])
       mask <- mask[,,1]
-      img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=50,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
+      img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
       ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-      seed_mask <- single_cell_convert(ctmask)
+      seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4)
       cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
       cmask1 <- array_reshape(cmask,c(dim(cmask),1))
       segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
       st_img <- stackObjects(cmask,rgb.imgs)
+      st_img_test <- Image(st_img)
       seg_cell <- list(st_img)
       seg_cell_test <- Image(seg_cell)
       cell_seg <<- append(cell_seg,seg_cell_test)
+      coord.mtx <- RSAGA::grid.to.xyz(cmask)
+      filter <- filter(coord.mtx,z>0)
+      for(u in 1:dim(st_img_test)[4]){
+        filter.mtx <- subset(filter,z==u)
+        xmin <- min(filter.mtx$x)-1
+        xmax <- max(filter.mtx$x)+1
+        ymin <- min(filter.mtx$y)-1
+        ymax <- max(filter.mtx$y)+1
+        cell.coord[nrow(cell.coord) + 1, ] <<- c(xmin, xmax, ymin, ymax)
+        rm(filter.mtx)
+      }
+      rm(coord.mtx)
+      rm(filter)
     }
+
     shinyCatch({message("***segmentation applied***")}, prefix = '', position = "bottom-left")
 
     output$current_image_plot2 <- renderPlot({
@@ -361,7 +399,8 @@ server_main = function(input, output, session) {
         x1 <- Image(x,colormode = Color)
         x2 <- array_reshape(x1, c(1, dim(x1)))
         pred <- predict_model %>% predict(x2)
-        model_label<-c("Anabaena","Microcystis","Dolichospermum")
+        model_label<-c(#"Anabaena",
+                       "Microcystis","Dolichospermum")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
         pred$Probability <- (100*pred$Probability)
@@ -383,8 +422,8 @@ server_main = function(input, output, session) {
   })
 
   ####server - tab 3####
-  cell.coord <<- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
-  cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
+  #cell.coord <<- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
+  #cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
   index5 <- reactiveVal(1)
   observeEvent(input[["previous4"]], {
     index5(max(index5()-1, 1))
@@ -394,68 +433,71 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$run4,{
     shinyCatch({message("generating prediction images - please wait")}, prefix = '', position = "bottom-left")
-    watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
-      if (removeEdgeCells == TRUE){
-        image <- thresh(x, w = w, h = h, offset = offset)
-        image1 <- fillHull(image)
-        image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
-        nf <- computeFeatures.shape(image2)
-        nr <- which(nf[, "s.area"] < areathresh)
-        image3 <- rmObjects(image2, nr)
-        dims <- dim(image3)
-        border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
-        ids <- unique(border1[which(border1 != 0)])
-        inner <- rmObjects(image3, ids)
-        return(inner)
-      } else{
-        image <- thresh(x, w = w, h = h, offset = offset)
-        image1 <- fillHull(image)
-        image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
-        nf <- computeFeatures.shape(image2)
-        nr <- which(nf[, "s.area"] < areathresh)
-        image3 <- rmObjects(image2, nr)
-        return(image3)
-      }
-    }
-    single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1) {
-      image <- thresh(x, w = w, h = h, offset = offset)
-      image1 <- fillHull(image)
-      image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
-      nf <- computeFeatures.shape(image2)
-      nr <- which(nf[, "s.area"] < areathresh)
-      image3 <- rmObjects(image2, nr)
-      return(image3)
-    }
-    for(k in 1:length(cell_seg)) {
-      cell_img <- cell_seg[[k]]
-      test_img <- image_load(images[[k]],target_size = c(1024,1024))
-      img_array <- test_img %>% image_to_array() %>% '/'(255)
-      rgb.imgs <- Image(img_array,colormode = Color)
-      mask <- abind(mask_main[[k]])
-      mask <- mask[,,1]
-      #display(mask)
-      img_watershed <- watershed_convert(mask,w=50,h=50,offset=0.001,areathresh=0,tolerance=0.5,ext = 1,removeEdgeCells=TRUE)
-      ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-      seed_mask <- single_cell_convert(ctmask)
-      #display(seed_mask)
-      cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
-      segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
-      #display(segmented)
-      coord.mtx <- RSAGA::grid.to.xyz(cmask)
-      filter <- filter(coord.mtx,z>0)
-      for(j in 1:dim(cell_img)[4]){
-        filter.mtx <- subset(filter,z==j)
-        xmin <- min(filter.mtx$x)-1
-        xmax <- max(filter.mtx$x)+1
-        ymin <- min(filter.mtx$y)-1
-        ymax <- max(filter.mtx$y)+1
-        cell.coord[nrow(cell.coord) + 1, ] <<- c(xmin, xmax, ymin, ymax)
-        rm(filter.mtx)
-      }
-      rm(coord.mtx)
-      rm(filter)
-    }
     ID.input <<- cbind(ID.input,cell.coord)
+   #watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
+   #  if (removeEdgeCells == TRUE){
+   #    image <- thresh(x, w = w, h = h, offset = offset)
+   #    image1 <- fillHull(image)
+   #    image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
+   #    nf <- computeFeatures.shape(image2)
+   #    nr <- which(nf[, "s.area"] < areathresh)
+   #    image3 <- rmObjects(image2, nr)
+   #    dims <- dim(image3)
+   #    border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
+   #    ids <- unique(border1[which(border1 != 0)])
+   #    inner <- rmObjects(image3, ids)
+   #    return(inner)
+   #  } else{
+   #    image <- thresh(x, w = w, h = h, offset = offset)
+   #    image1 <- fillHull(image)
+   #    image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
+   #    nf <- computeFeatures.shape(image2)
+   #    nr <- which(nf[, "s.area"] < areathresh)
+   #    image3 <- rmObjects(image2, nr)
+   #    return(image3)
+   #  }
+   #}
+   #single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1) {
+   #  image <- thresh(x, w = w, h = h, offset = offset)
+   #  image1 <- fillHull(image)
+   #  image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
+   #  nf <- computeFeatures.shape(image2)
+   #  nr <- which(nf[, "s.area"] < areathresh)
+   #  image3 <- rmObjects(image2, nr)
+   #  return(image3)
+   #}
+   #for(k in 1:length(images)) {
+   #  cell_img <- cell_seg[[k]]
+   #  test_img <- image_load(images[[k]],target_size = c(1024,1024))
+   #  img_array <- test_img %>% image_to_array() %>% '/'(255)
+   #  rgb.imgs <- Image(img_array,colormode = Color)
+   #  mask <- abind(mask_main[[k]])
+   #  mask <- mask[,,1]
+   #  display(mask)
+   #  img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+   #  final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
+   #  EBImage::display(final_img)
+   #  ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
+   #  seed_mask <- single_cell_convert(ctmask)
+   #  display(seed_mask)
+   #  cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
+   #  segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
+   #  display(segmented)
+   #  coord.mtx <- RSAGA::grid.to.xyz(cmask)
+   #  filter <- filter(coord.mtx,z>0)
+   #  for(u in 1:dim(cell_img)[4]){
+   #    filter.mtx <- subset(filter,z==u)
+   #    xmin <- min(filter.mtx$x)-1
+   #    xmax <- max(filter.mtx$x)+1
+   #    ymin <- min(filter.mtx$y)-1
+   #    ymax <- max(filter.mtx$y)+1
+   #    cell.coord[nrow(cell.coord) + 1, ] <- c(xmin, xmax, ymin, ymax)
+   #    rm(filter.mtx)
+   #  }
+   #  rm(coord.mtx)
+   #  rm(filter)
+   #}
+   #ID.input <<- cbind(ID.input,cell.coord)
 
     test_ID.input <- subset(ID.input,file_ID==image_names[[1]])
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
@@ -515,53 +557,104 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$save1,{
     shinyCatch({message("saving data/images - please wait")}, prefix = '', position = "bottom-left")
-    for (h in 1:length(cell_seg)) {
-      export_cells<-cell_seg[[h]]
-      Index_grey<-paste0(sub(".tif", replacement = "_", x=image_names[[h]]))
-      Index1<-paste0(sub(".tif", replacement = "/ ", x=image_names[[h]]))
-      newpath<-file.path(img_dir2,Index1)
-      if(!dir.exists(newpath)){
-        dir.create(newpath)
-      }
-      for(k in 1:dim(export_cells)[4]) {
-        st_imgs_color<-export_cells[, , , k]
-        analyzed_image1<-paste0(sub(".tif", replacement = " ", x=image_names[[h]]),"_cell_")
-        analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
-        analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),".png")
-        writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      }
-      csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-      export_ID.input <- subset(ID.input,file_ID==image_names[[h]])
-      write.csv(export_ID.input, paste0(newpath, csv_save)) #Change this CSV file name
-      rm(export_ID.input)
+    if(grepl("(?i).jpg", image_names[[2]])==TRUE){
+      for (h in 1:length(cell_seg)) {
+        export_cells<-cell_seg[[h]]
+        Index_grey<-paste0(sub(".jpg", replacement = "_", x=image_names[[h]]))
+        Index1<-paste0(sub(".jpg", replacement = "", x=image_names[[h]]))
+        newpath<-paste0(img_dir2,Index1,"/")
+        if(!dir.exists(newpath)){
+          dir.create(newpath)
+        }
+        for(k in 1:dim(export_cells)[4]) {
+          st_imgs_color<-export_cells[, , , k]
+          analyzed_image1<-paste0(sub(".jpg", replacement = " ", x=image_names[[h]]),"_cell_")
+          analyzed_image2<-paste0(sub(".jpg", replacement = " ", x=analyzed_image1),k)
+          analyzed_image3<-paste0(sub(".jpg", replacement = " ", x=analyzed_image2),".png")
+          writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
+        }
+        csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
+        export_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+        write.csv(export_ID.input, paste0(newpath, csv_save)) #Change this CSV file name
+        rm(export_ID.input)
 
-      #count_ID.input <- subset(ID.input,file_ID==image_names[[h]])
-      #microcystis_freq<-colSums(count_ID.input=='Microcystis')
-      #microcystis_freq<-microcystis_freq[[3]]
-      #dolicho_freq<-colSums(count_ID.input=='Dolichospermum')
-      #dolicho_freq<-dolicho_freq[[3]]
-      #anabaena_freq<-colSums(count_ID.input=='Anabaena')
-      #anabaena_freq<-anabaena_freq[[3]]
-      #cell.count[nrow(cell.count) + 1, ] <<- c(image_names[[h]], microcystis_freq, anabaena_freq, dolicho_freq)
-      #rm(count_ID.input)
-      #rm(microcystis_freq)
-      #rm(anabaena_freq)
-      #rm(dolichospermum_freq)
+        #count_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+        #microcystis_freq<-colSums(count_ID.input=='Microcystis')
+        #microcystis_freq<-microcystis_freq[[3]]
+        #dolicho_freq<-colSums(count_ID.input=='Dolichospermum')
+        #dolicho_freq<-dolicho_freq[[3]]
+        #anabaena_freq<-colSums(count_ID.input=='Anabaena')
+        #anabaena_freq<-anabaena_freq[[3]]
+        #cell.count[nrow(cell.count) + 1, ] <<- c(image_names[[h]], microcystis_freq, anabaena_freq, dolicho_freq)
+        #rm(count_ID.input)
+        #rm(microcystis_freq)
+        #rm(anabaena_freq)
+        #rm(dolichospermum_freq)
 
-      test_img <- image_load(images[[h]],target_size = c(1024,1024))
-      img_array <- test_img %>% image_to_array() %>% '/'(255)
-      rgb.imgs <- Image(img_array,colormode = Color)
-      ex_ID.input <- cbind(ID.input,cell.coord)
-      ex_ID.input1 <- subset(ex_ID.input,file_ID==image_names[[h]])
-      test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
-      estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
-                                           aes(xmin = xmin, xmax = xmax,
-                                               ymin = ymin, ymax = ymax,
-                                               fill = ID_estimate, colour = ID_estimate),
-                                           alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-        theme(legend.position = "bottom")
-      export_image<-paste0(sub(".tif", replacement = "", x=image_names[[h]]),"_predict.png")
-      ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+        test_img <- image_load(images[[h]],target_size = c(1024,1024))
+        img_array <- test_img %>% image_to_array() %>% '/'(255)
+        rgb.imgs <- Image(img_array,colormode = Color)
+        ex_ID.input <- cbind(ID.input,cell.coord)
+        ex_ID.input1 <- subset(ex_ID.input,file_ID==image_names[[h]])
+        test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+        estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+                                             aes(xmin = xmin, xmax = xmax,
+                                                 ymin = ymin, ymax = ymax,
+                                                 fill = ID_estimate, colour = ID_estimate),
+                                             alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+          theme(legend.position = "bottom")
+        export_image<-paste0(sub(".jpg", replacement = "", x=image_names[[h]]),"_predict.png")
+        ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+      }
+    } else if (grepl("(?i).tif", image_names[[2]])==TRUE){
+      for (h in 1:length(cell_seg)) {
+        export_cells<-cell_seg[[h]]
+        Index_grey<-paste0(sub(".tif", replacement = "_", x=image_names[[h]]))
+        Index1<-paste0(sub(".tif", replacement = "", x=image_names[[h]]))
+        newpath<-paste0(img_dir2,Index1,"/")
+        if(!dir.exists(newpath)){
+          dir.create(newpath)
+        }
+        for(k in 1:dim(export_cells)[4]) {
+          st_imgs_color<-export_cells[, , , k]
+          analyzed_image1<-paste0(sub(".tif", replacement = " ", x=image_names[[h]]),"_cell_")
+          analyzed_image2<-paste0(sub(".tif", replacement = " ", x=analyzed_image1),k)
+          analyzed_image3<-paste0(sub(".tif", replacement = " ", x=analyzed_image2),".png")
+          writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
+        }
+        csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
+        export_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+        write.csv(export_ID.input, paste0(newpath, csv_save)) #Change this CSV file name
+        rm(export_ID.input)
+
+        #count_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+        #microcystis_freq<-colSums(count_ID.input=='Microcystis')
+        #microcystis_freq<-microcystis_freq[[3]]
+        #dolicho_freq<-colSums(count_ID.input=='Dolichospermum')
+        #dolicho_freq<-dolicho_freq[[3]]
+        #anabaena_freq<-colSums(count_ID.input=='Anabaena')
+        #anabaena_freq<-anabaena_freq[[3]]
+        #cell.count[nrow(cell.count) + 1, ] <<- c(image_names[[h]], microcystis_freq, anabaena_freq, dolicho_freq)
+        #rm(count_ID.input)
+        #rm(microcystis_freq)
+        #rm(anabaena_freq)
+        #rm(dolichospermum_freq)
+
+        test_img <- image_load(images[[h]],target_size = c(1024,1024))
+        img_array <- test_img %>% image_to_array() %>% '/'(255)
+        rgb.imgs <- Image(img_array,colormode = Color)
+        ex_ID.input <- cbind(ID.input,cell.coord)
+        ex_ID.input1 <- subset(ex_ID.input,file_ID==image_names[[h]])
+        test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+        estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+                                             aes(xmin = xmin, xmax = xmax,
+                                                 ymin = ymin, ymax = ymax,
+                                                 fill = ID_estimate, colour = ID_estimate),
+                                             alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+          theme(legend.position = "bottom")
+        export_image<-paste0(sub(".tif", replacement = "", x=image_names[[h]]),"_predict.png")
+        ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+      }
     }
     shinyCatch({message("***data and images saved***")}, prefix = '', position = "bottom-left")
     beepr::beep(sound=1)
