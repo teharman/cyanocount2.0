@@ -91,9 +91,9 @@ single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_2/")
-image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_2/")
-image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_2/')
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_3/")
+image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_3/")
+image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_3/')
 mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/True_Mask/")
 mask_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/True_Mask/')
 
@@ -123,7 +123,7 @@ if(grepl("(?i).jpg", images[[2]])==TRUE){
 }
 
 #img number
-y<-10
+y<-6
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -135,7 +135,7 @@ rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 EBImage::display(rgb.imgs)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 1, increase=FALSE)
+grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 5, brightness = 1, increase=FALSE)
 EBImage::display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 EBImage::display(neg_imgs[[y]])
