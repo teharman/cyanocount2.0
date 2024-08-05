@@ -30,6 +30,7 @@ library(RSAGA)
 library(spsComps)
 library(stringr)
 library(pbapply)
+library(DescTools)
 #___________________________________________________________#
 
 jscode <- "shinyjs.closeWindow = function() { window.close(); }"
@@ -42,7 +43,8 @@ ui_main = fluidPage(
   theme = shinytheme("cosmo"),
   sidebarPanel(navlistPanel(
     widths=c(12,12),
-    "CyanoSCOPE - Prediction and Enumeration Interface",
+    "CyanoSCOPE - Automated Cyanobacteria Prediction and Enumeration Interface",
+    h4(" "),
     header = div("",img(src='pics/CyanoSCOPE_Logo.png',
                         id = "CyanoSCOPE Logo", height = "140px",width = "320px",style = "position: relative; margin:-15px 0px; display:right-align;"))
   ),
@@ -60,9 +62,15 @@ ui_main = fluidPage(
                actionButton("run1","3) Upload Images",class = "btn-success",style='height:35px;width:182px;font-size:100%;display:center-align',icon=icon("upload"))
              ),
              h6(" "),
-             fluidRow(
-               verbatimTextOutput('path1',placeholder = TRUE)
+             fluidRow(style = "display: flex;",
+               column(6,verbatimTextOutput('path1',placeholder = TRUE),
+                      style = "font-size:70%;height:75px"),
+               column(6,selectInput("selectData",
+                                     h6(strong("Select objective magnification:")),
+                                     choices=list("20X","40X"),selected="20X"),
+                      style = "font-size:70%;height:75px")
              ),
+             h6(" "),
              fluidRow(
                column(5,
                       wellPanel(DT::dataTableOutput('img_data'),width=3,style = "font-size:70%;height:500px")
@@ -87,7 +95,7 @@ ui_main = fluidPage(
              h6(" "),
              fluidRow(
                column(9,
-                      wellPanel(DT::dataTableOutput('predict_data',width = '500px'),style = "font-size:70%;height:450px")
+                      wellPanel(DT::dataTableOutput('predict_data',width = '500px'),style = "font-size:60%;height:550px;width:550px")
                ),
                column(3,
                       wellPanel(plotOutput("current_image_plot2"),style = "padding: 0px;height:150px")
@@ -126,7 +134,7 @@ ui_main = fluidPage(
              ),
              h6(" "),
              column(12,
-                    wellPanel(plotOutput("current_image_plot3"),style = "padding: 0px;height:450px")
+                    wellPanel(plotOutput("current_image_plot3"),style = "padding: 0px;height:500px")
              ),
              fluidRow(
                column(7,offset=1,
@@ -164,6 +172,15 @@ server_main = function(input, output, session) {
         images_list <<- data.frame(image_names)
       }
     })
+  })
+
+  observeEvent(input$selectData, {
+    if(input$selectData == '20X'){
+      analysis_type<<-("20X")
+    }
+    else if(input$selectData == "40X"){
+      analysis_type<<-("40X")
+    }
   })
 
   rv <- reactiveVal(images_list)
@@ -212,7 +229,9 @@ server_main = function(input, output, session) {
   #})
 
   ####server - tab 2####
-  ID.input <<- data.frame(file_ID = character(0), cell_number = numeric(0), ID_estimate = character(0), Percent_estimate = numeric(0))
+  total_results <<- data.frame(file_ID = character(0), cell_number = numeric(0), Shape.Estimate = character(0), Shape.Percent = numeric(0), ID.Estimate = character(0), ID.Percent = numeric(0))
+  shape.input <<- data.frame(file_ID = character(0), cell_number = numeric(0), Shape.Estimate = character(0), Shape.Percent = numeric(0))
+  ID.input <<- data.frame(file_ID = character(0), cell_number = numeric(0), ID.Estimate = character(0), ID.Percent = numeric(0))
   index2 <- reactiveVal(1)
   index3 <- reactiveVal(1)
   observeEvent(input[["previous2"]], {
@@ -267,7 +286,8 @@ server_main = function(input, output, session) {
     shinyCatch({message("applying binary segmentation - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
 
-    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_ASLO_test/ID_model_test/', custom_objects = NULL, compile = TRUE)
+    shape_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/shape_model_test_01/', custom_objects = NULL, compile = TRUE)
+    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
     watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 100, tolerance= 0.4, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
@@ -303,9 +323,12 @@ server_main = function(input, output, session) {
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
     img_array <- test_img %>% image_to_array() %>% '/'(255)
     rgb.imgs <- Image(img_array,colormode = Color)
+    EBImage::display(rgb.imgs)
     mask <- abind(mask_main[[1]])
     mask <- mask[,,1]
+    EBImage::display(mask)
     img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+    EBImage::display(img_watershed)
     final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
     EBImage::display(final_img)
     count_cells(img_watershed)
@@ -318,10 +341,14 @@ server_main = function(input, output, session) {
     cmask1 <- array_reshape(cmask,c(dim(cmask),1))
     segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
     EBImage::display(segmented)
+    st_blob <- stackObjects(cmask,img_watershed)
     st_img <- stackObjects(cmask,rgb.imgs)
     st_img_test <- Image(st_img)
+    st_img_blob <- Image(st_blob)
     EBImage::display(st_img_test)
+    EBImage::display(st_img_blob)
     cell_seg <<- list(st_img_test)
+    blob_seg <<- list(st_img_blob)
     coord.mtx <- RSAGA::grid.to.xyz(cmask)
     filter <- filter(coord.mtx,z>0)
     for(u in 1:dim(st_img_test)[4]){
@@ -335,6 +362,18 @@ server_main = function(input, output, session) {
     }
     rm(coord.mtx)
     rm(filter)
+
+    shape.features.data <<- read.csv('Cell_Features_Data.csv',header=T)
+
+    features.data.img <<- computeFeatures.shape(cmask,rgb.imgs)
+    features.data.img <<- as.data.frame(features.data.img)
+    features.data.img$file_ID <<- image_names[[1]]
+    features.data.img <<- features.data.img %>% dplyr::select(.,file_ID,
+                                                             s.area,
+                                                             s.perimeter,
+                                                             s.radius.mean)
+    features.data.img$cell_number <<- 1:nrow(features.data.img)
+
     for (z in 2:length(read_images)){
       test_img <- image_load(images[[z]],target_size = c(1024,1024))
       img_array <- test_img %>% image_to_array() %>% '/'(255)
@@ -348,10 +387,16 @@ server_main = function(input, output, session) {
       cmask1 <- array_reshape(cmask,c(dim(cmask),1))
       segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
       st_img <- stackObjects(cmask,rgb.imgs)
+      st_blob <- stackObjects(cmask,img_watershed)
       st_img_test <- Image(st_img)
+      st_img_blob <- Image(st_blob)
+      EBImage::display(st_img_blob)
       seg_cell <- list(st_img)
+      seg_blob <- list(st_blob)
       seg_cell_test <- Image(seg_cell)
+      seg_blob_test <- Image(seg_blob)
       cell_seg <<- append(cell_seg,seg_cell_test)
+      blob_seg <<- append(blob_seg,seg_blob_test)
       coord.mtx <- RSAGA::grid.to.xyz(cmask)
       filter <- filter(coord.mtx,z>0)
       for(u in 1:dim(st_img_test)[4]){
@@ -365,6 +410,17 @@ server_main = function(input, output, session) {
       }
       rm(coord.mtx)
       rm(filter)
+
+      features.data.img1 <<- computeFeatures.shape(cmask,rgb.imgs)
+      features.data.img1 <<- as.data.frame(features.data.img1)
+      features.data.img1$file_ID <<- image_names[[z]]
+      features.data.img1 <<- features.data.img1 %>% dplyr::select(.,file_ID,
+                                                                 s.area,
+                                                                 s.perimeter,
+                                                                 s.radius.mean)
+      features.data.img1$cell_number <<- 1:nrow(features.data.img1)
+      features.data.img <<- rbind(features.data.img,features.data.img1)
+      rm(features.data.img1)
     }
 
     shinyCatch({message("***segmentation applied***")}, prefix = '', position = "bottom-left")
@@ -379,7 +435,7 @@ server_main = function(input, output, session) {
   })
 
   observeEvent(input$update3,{
-    shinyCatch({message("running ID prediction model - please wait")}, prefix = '', position = "bottom-left")
+    shinyCatch({message("running models - please wait")}, prefix = '', position = "bottom-left")
     sigfig <- function(vec, n=3){
       ### function to round values to N significant digits
       # input:   vec       vector of numeric
@@ -389,6 +445,35 @@ server_main = function(input, output, session) {
       formatC(signif(vec,digits=n))
 
     }
+
+    Sys.sleep(3)
+    shinyCatch({message("applying shape-based model - please wait")}, prefix = '', position = "bottom-left")
+    Sys.sleep(3)
+
+    for(k in 1:length(blob_seg)) {
+      blob_img <- blob_seg[[k]]
+      file_ID <- image_names[[k]]
+      for(z in 1:dim(blob_img)[3]){
+        cell_num <- z
+        resize_img <- EBImage::resize(blob_img[,,z],w=150,h=150)
+        x <- image_to_array(resize_img)
+        x1 <- Image(x,colormode = Grayscale)
+        x2 <- array_reshape(x1, c(1, dim(x1)))
+        pred <- shape_model %>% predict(x2)
+        model_label<-c("Anabaena",
+                       "Microcystis","Dolichospermum")
+        pred <- data.frame("Species" = model_label, "Probability" = t(pred))
+        pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
+        pred$Probability <- (100*pred$Probability)
+        pred$Probability <- paste(formatC(pred$Probability, digits = 3, format = "f"),"%")
+        shape.input[nrow(shape.input) + 1, ] <<- c(file_ID, cell_num, pred$Species[[1]], pred$Probability[[1]])
+      }
+    }
+
+    Sys.sleep(3)
+    shinyCatch({message("applying ID prediction model - please wait")}, prefix = '', position = "bottom-left")
+    Sys.sleep(3)
+
     for(k in 1:length(cell_seg)) {
       cell_img <- cell_seg[[k]]
       file_ID <- image_names[[k]]
@@ -399,7 +484,7 @@ server_main = function(input, output, session) {
         x1 <- Image(x,colormode = Color)
         x2 <- array_reshape(x1, c(1, dim(x1)))
         pred <- predict_model %>% predict(x2)
-        model_label<-c(#"Anabaena",
+        model_label<-c("Anabaena",
                        "Microcystis","Dolichospermum")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
@@ -408,17 +493,30 @@ server_main = function(input, output, session) {
         ID.input[nrow(ID.input) + 1, ] <<- c(file_ID, cell_num, pred$Species[[1]], pred$Probability[[1]])
       }
     }
+    total_results <<- merge(shape.input,ID.input,by=c("file_ID","cell_number"))
+
+
+
     shinyCatch({message("***ID prediction complete***")}, prefix = '', position = "bottom-left")
     beepr::beep(sound=1)
   })
 
-  rv1 <- reactiveVal(ID.input)
+  rv1 <- reactiveVal(total_results)
   onclick("update5",{
     proxy=dataTableProxy("predict_data")
-    replaceData(proxy,ID.input)
+    replaceData(proxy,total_results)
   })
   output$predict_data <- DT::renderDataTable ({
-    DT::datatable(rv1(), editable = TRUE)
+    DT::datatable(rv1(), editable = TRUE,    options = list(
+      autoWidth = TRUE,
+      columnDefs = list(list(targets=c(0), visible=TRUE, width='50'),
+                        list(targets=c(1), visible=TRUE, width='50'),
+                        list(targets=c(2), visible=TRUE, width='50'),
+                        list(targets=c(3), visible=TRUE, width='50'),
+                        list(targets=c(4), visible=TRUE, width='50'),
+                        list(targets=c(5), visible=TRUE, width='50'),
+                        list(targets='_all', visible=FALSE)
+      )))
   })
 
   ####server - tab 3####
@@ -433,7 +531,74 @@ server_main = function(input, output, session) {
   })
   observeEvent(input$run4,{
     shinyCatch({message("generating prediction images - please wait")}, prefix = '', position = "bottom-left")
-    ID.input <<- cbind(ID.input,cell.coord)
+
+    prediction_labels <<- data.frame(prediction_results = character(0))
+    for(i in 1:dim(total_results)[1]){
+      value1 <- as.numeric(paste0(sub(" %", replacement = "", x=total_results[i,4])))
+      value2 <- as.numeric(paste0(sub(" %", replacement = "", x=total_results[i,6])))
+      predict1 <- total_results[i,3]
+      predict2 <- total_results[i,5]
+
+      value_result1 <- (value1 < 75)
+      value_result2 <- (value2 < 75)
+      value_result <- as.logical(value_result1 + value_result2)
+
+      try(if(predict1 == predict2 & value_result == FALSE){
+        value1 <- "POSITIVE"
+        prediction_labels[nrow(prediction_labels) + 1, ] <<- c(value1)
+      })
+      try(if(predict1 != predict2 & value_result == FALSE){
+        value3 <- "ESTIMATE"
+        prediction_labels[nrow(prediction_labels) + 1, ] <<- c(value3)
+      })
+      try(if(predict1 == predict2 & value_result == TRUE){
+        value3 <- "ESTIMATE"
+        prediction_labels[nrow(prediction_labels) + 1, ] <<- c(value3)
+      })
+      try(if(predict1 != predict2 & value_result == TRUE){
+        value4 <- "NEGATIVE"
+        prediction_labels[nrow(prediction_labels) + 1, ] <<- c(value4)
+      })
+    }
+
+    total_results <<- cbind(total_results,prediction_labels)
+
+    total_results <<- merge(total_results,features.data.img,by=c("file_ID","cell_number"))
+    total_results$cell_number <<- as.character(total_results$cell_number)
+    total_results <<- total_results %>%
+      mutate(cell_number = recode(cell_number,
+                                  '1' = '01',
+                                  '2' = '02',
+                                  '3' = '03',
+                                  '4' = '04',
+                                  '5' = '05',
+                                  '6' = '06',
+                                  '7' = '07',
+                                  '8' = '08',
+                                  '9' = '09'
+      ))
+    total_results <<- total_results[order(total_results$cell_number,decreasing=FALSE),]
+    total_results <<- total_results[order(total_results$file_ID,decreasing=FALSE),]
+
+    total_results <<- cbind(total_results,cell.coord)
+
+    new_shape.features.data <<- subset(shape.features.data,Objective==analysis_type)
+
+    for(y in 1:dim(total_results)[1]){
+      cell_row_data <<- total_results[y,]
+      if(cell_row_data$ID.Estimate == "Microcystis"){
+        if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus2[4],new_shape.features.data$SD_Plus2[4])==TRUE){
+          total_results$ID.Estimate[y] <<- "UNKNOWN"
+          total_results$prediction_results[y] <<- "POSITIVE"
+        } else{}
+      } else if(cell_row_data$ID.Estimate == "Dolichospermum"){
+        if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus2[1],new_shape.features.data$SD_Plus2[1])==TRUE){
+          total_results$ID.Estimate[y] <<- "UNKNOWN"
+          total_results$prediction_results[y] <<- "POSITIVE"
+        } else{}
+      }
+    }
+
    #watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
    #  if (removeEdgeCells == TRUE){
    #    image <- thresh(x, w = w, h = h, offset = offset)
@@ -497,37 +662,109 @@ server_main = function(input, output, session) {
    #  rm(coord.mtx)
    #  rm(filter)
    #}
-   #ID.input <<- cbind(ID.input,cell.coord)
+   #total_results <<- cbind(total_results,cell.coord)
 
-    test_ID.input <- subset(ID.input,file_ID==image_names[[1]])
+    test_ID.input <- subset(total_results,file_ID==image_names[[1]])
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
     img_array <- test_img %>% image_to_array() %>% '/'(255)
     rgb.imgs <- Image(img_array,colormode = Color)
     test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+
+    draw_key_polygon3 <- function(data, params, size) {
+      lwd <- min(data$size, min(size) / 14)
+
+      grid::rectGrob(
+        width = grid::unit(0.8, "npc"),
+        height = grid::unit(0.8, "npc"),
+        gp = grid::gpar(
+          col = data$colour,
+          fill = alpha(data$fill, data$alpha),
+          lty = data$linetype,
+          lwd = lwd * .pt,
+          linejoin = "mitre"
+        ))
+    }
+
+    GeomRect$draw_key = draw_key_polygon3
+
     estimate_plot <- test_img1+geom_rect(data = test_ID.input,
-                                       aes(xmin = xmin, xmax = xmax,
-                                           ymin = ymin, ymax = ymax,
-                                           fill = ID_estimate, colour = ID_estimate),
-                                       alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+                                         aes(xmin = xmin, xmax = xmax,
+                                             ymin = ymin, ymax = ymax,
+                                             fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                         alpha = .20, linewidth = 0.15, inherit.aes = FALSE)+
+      scale_colour_manual(name="ID Prediction",
+                          values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+      scale_fill_manual(name="ID Prediction",
+                        values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+      scale_linetype_manual(name="Prediction Results",
+                            labels = c("Estimate", "Negative", "Positive"),
+                            values = c(2,3,1))+
+      guides(linetype = guide_legend(override.aes = list(
+        linetype = c("dashed", "dotted", "solid"),
+        color = c("black","black", "black"),
+        fill = c(NA,NA,NA)))) +
       theme(legend.text = element_text(size=3),
-            legend.title = element_text(size=4),
-            legend.key.size = unit(0.25,"cm"))
+            legend.title = element_text(size=3),
+            legend.key.size = unit(0.25,"cm"),
+            legend.spacing.y = unit(1, 'mm'),
+            plot.margin=unit(c(0,0.35,0,0),"cm"),
+            #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+            #                          colour = c("black","black","black",NA)),
+            legend.position = "right")
+
     estimate_list <<- list(estimate_plot)
+
     for(r in 2:length(read_images)) {
-      test_ID.input <- subset(ID.input,file_ID==image_names[[r]])
+      test_ID.input <- subset(total_results,file_ID==image_names[[r]])
       test_img <- image_load(images[[r]],target_size = c(1024,1024))
       img_array <- test_img %>% image_to_array() %>% '/'(255)
       rgb.imgs <- Image(img_array,colormode = Color)
       test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+
+      draw_key_polygon3 <- function(data, params, size) {
+        lwd <- min(data$size, min(size) / 14)
+
+        grid::rectGrob(
+          width = grid::unit(0.8, "npc"),
+          height = grid::unit(0.8, "npc"),
+          gp = grid::gpar(
+            col = data$colour,
+            fill = alpha(data$fill, data$alpha),
+            lty = data$linetype,
+            lwd = lwd * .pt,
+            linejoin = "mitre"
+          ))
+      }
+
+      GeomRect$draw_key = draw_key_polygon3
+
       estimate_plot <- test_img1+geom_rect(data = test_ID.input,
-                                         aes(xmin = xmin, xmax = xmax,
-                                             ymin = ymin, ymax = ymax,
-                                             fill = ID_estimate, colour = ID_estimate),
-                                         alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+                                           aes(xmin = xmin, xmax = xmax,
+                                               ymin = ymin, ymax = ymax,
+                                               fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
+                                           alpha = .20, linewidth = 0.15, inherit.aes = FALSE)+
+        scale_colour_manual(name="ID Prediction",
+                            values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+        scale_fill_manual(name="ID Prediction",
+                          values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+        scale_linetype_manual(name="Prediction Results",
+                              labels = c("Estimate", "Negative", "Positive"),
+                              values = c(2,3,1))+
+        guides(linetype = guide_legend(override.aes = list(
+          linetype = c("dashed", "dotted", "solid"),
+          color = c("black","black", "black"),
+          fill = c(NA,NA,NA)))) +
         theme(legend.text = element_text(size=3),
-              legend.title = element_text(size=4),
-              legend.key.size = unit(0.25,"cm"))
+              legend.title = element_text(size=3),
+              legend.key.size = unit(0.25,"cm"),
+              legend.spacing.y = unit(1, 'mm'),
+              plot.margin=unit(c(0,0.35,0,0),"cm"),
+              #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+              #                          colour = c("black","black","black",NA)),
+              legend.position = "right")
+
       estimate_list1 <- list(estimate_plot)
+
       estimate_list <<- append(estimate_list,estimate_list1)
     }
     shinyCatch({message("***prediction images generated***")}, prefix = '', position = "bottom-left")
@@ -535,7 +772,7 @@ server_main = function(input, output, session) {
     output$current_image_plot3 <- renderPlot({
       loaded_image4 <- plot(estimate_list[[index5()]])
       loaded_image4
-    },res=300,width=750,height=450)
+    },res=300,width=670,height=470)
 
     beepr::beep(sound=1)
   })
@@ -574,7 +811,8 @@ server_main = function(input, output, session) {
           writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
         }
         csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-        export_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+        export_ID.input <- subset(total_results,file_ID==image_names[[h]])
+        export_ID.input <- export_ID.input[,-c(8:11)]
         write.csv(export_ID.input, paste0(newpath, csv_save)) #Change this CSV file name
         rm(export_ID.input)
 
@@ -594,15 +832,40 @@ server_main = function(input, output, session) {
         test_img <- image_load(images[[h]],target_size = c(1024,1024))
         img_array <- test_img %>% image_to_array() %>% '/'(255)
         rgb.imgs <- Image(img_array,colormode = Color)
-        ex_ID.input <- cbind(ID.input,cell.coord)
-        ex_ID.input1 <- subset(ex_ID.input,file_ID==image_names[[h]])
+        ex_ID.input1 <- subset(total_results,file_ID==image_names[[h]])
         test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+
+        #estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+        #                                     aes(xmin = xmin, xmax = xmax,
+        #                                         ymin = ymin, ymax = ymax,
+        #                                         fill = ID.Estimate, colour = ID.Estimate),
+        #                                     alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+        #  theme(legend.position = "bottom")
+
         estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
                                              aes(xmin = xmin, xmax = xmax,
                                                  ymin = ymin, ymax = ymax,
-                                                 fill = ID_estimate, colour = ID_estimate),
+                                                 fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
                                              alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-          theme(legend.position = "bottom")
+          scale_colour_manual(name="ID Prediction",
+                              values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+          scale_fill_manual(name="ID Prediction",
+                            values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+          scale_linetype_manual(name="Prediction Results",
+                                labels = c("Estimate", "Negative", "Positive"),
+                                values = c(2,3,1))+
+          guides(linetype = guide_legend(override.aes = list(
+            linetype = c("dashed", "dotted", "solid"),
+            color = c("black","black", "black"),
+            fill = c(NA,NA,NA)))) +
+          theme(legend.text = element_text(size=10),
+                legend.title = element_text(size=10),
+                legend.key.size = unit(0.75,"cm"),
+                legend.spacing.y = unit(5, 'mm'),
+                #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+                #                          colour = c("black","black","black",NA)),
+                legend.position = "bottom")
+
         export_image<-paste0(sub(".jpg", replacement = "", x=image_names[[h]]),"_predict.png")
         ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
       }
@@ -623,7 +886,8 @@ server_main = function(input, output, session) {
           writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
         }
         csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-        export_ID.input <- subset(ID.input,file_ID==image_names[[h]])
+        export_ID.input <- subset(total_results,file_ID==image_names[[h]])
+        export_ID.input <- export_ID.input[,-c(8:11)]
         write.csv(export_ID.input, paste0(newpath, csv_save)) #Change this CSV file name
         rm(export_ID.input)
 
@@ -643,15 +907,40 @@ server_main = function(input, output, session) {
         test_img <- image_load(images[[h]],target_size = c(1024,1024))
         img_array <- test_img %>% image_to_array() %>% '/'(255)
         rgb.imgs <- Image(img_array,colormode = Color)
-        ex_ID.input <- cbind(ID.input,cell.coord)
-        ex_ID.input1 <- subset(ex_ID.input,file_ID==image_names[[h]])
+        ex_ID.input1 <- subset(total_results,file_ID==image_names[[h]])
         test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+
+        #estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+        #                                     aes(xmin = xmin, xmax = xmax,
+        #                                         ymin = ymin, ymax = ymax,
+        #                                         fill = ID_estimate, colour = ID_estimate),
+        #                                     alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+        #  theme(legend.position = "bottom")
+
         estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
                                              aes(xmin = xmin, xmax = xmax,
                                                  ymin = ymin, ymax = ymax,
-                                                 fill = ID_estimate, colour = ID_estimate),
+                                                 fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
                                              alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-          theme(legend.position = "bottom")
+          scale_colour_manual(name="ID Prediction",
+                              values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+          scale_fill_manual(name="ID Prediction",
+                            values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+          scale_linetype_manual(name="Prediction Results",
+                                labels = c("Estimate", "Negative", "Positive"),
+                                values = c(2,3,1))+
+          guides(linetype = guide_legend(override.aes = list(
+            linetype = c("dashed", "dotted", "solid"),
+            color = c("black","black", "black"),
+            fill = c(NA,NA,NA)))) +
+          theme(legend.text = element_text(size=10),
+                legend.title = element_text(size=10),
+                legend.key.size = unit(0.75,"cm"),
+                legend.spacing.y = unit(5, 'mm'),
+                #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+                #                          colour = c("black","black","black",NA)),
+                legend.position = "bottom")
+
         export_image<-paste0(sub(".tif", replacement = "", x=image_names[[h]]),"_predict.png")
         ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
       }
@@ -670,4 +959,4 @@ server_main = function(input, output, session) {
   })
 }
 
-runGadget(ui_main, server_main, viewer = dialogViewer("CyanoSCOPE - Prediction and Enumeration UI",width = 1200, height = 800))
+runGadget(ui_main, server_main, viewer = dialogViewer("CyanoSCOPE - Automated Cyanobacteria Prediction and Enumeration UI",width = 1200, height = 800))
