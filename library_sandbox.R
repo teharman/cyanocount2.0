@@ -91,11 +91,11 @@ single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_3/")
-image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_3/")
-image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/Raw_Imgs/Orient_2_Batch_3/')
-mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/True_Mask/")
-mask_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/40X/True_Mask/')
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_2/")
+image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_2/")
+image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_2/')
+mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/True_Mask/")
+mask_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/True_Mask/')
 
 images <- list.files(img_dir, pattern = NULL, full.name = F)
 
@@ -123,7 +123,7 @@ if(grepl("(?i).jpg", images[[2]])==TRUE){
 }
 
 #img number
-y<-6
+y<-1
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
@@ -135,14 +135,14 @@ rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 EBImage::display(rgb.imgs)
 
 ####Initial image conversion####
-grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 5, brightness = 1, increase=FALSE)
+grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 1, increase=FALSE)
 EBImage::display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 EBImage::display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.2)
+binary_img<-lapply(neg_imgs, binary, adj = 0.05)
 EBImage::display(binary_img[[y]])
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.1) #background intensity threshold adjustment
-img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=300,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
+img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=150,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
 EBImage::display(img_watershed)
 
 #Shiny UI cell selector
@@ -549,7 +549,7 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
       analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
       features.img1$frame_num[k]<-cbind(k)
       writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      WriteImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
+      writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
     }
     csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
     write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name
