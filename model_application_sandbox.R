@@ -31,7 +31,7 @@ library(spsComps)
 library(stringr)
 library(pbapply)
 
-img_dir <- ("X:/CyanoSCOPE_imgs/Test_02/Single_Culture/Batch_1/")
+img_dir <- ("X:/CyanoSCOPE_imgs/Test_03/")
 
 images_list <- data.frame(image_names = character(0))
 images <- list.files(img_dir, full.name = T)
@@ -102,13 +102,13 @@ rgb.imgs <- Image(img_array,colormode = Color)
 mask <- abind(mask_main[[1]])
 mask <- mask[,,1]
 EBImage::display(mask)
-img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
 EBImage::display(img_watershed)
 final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
 EBImage::display(final_img)
 count_cells(img_watershed)
 ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4)
+seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4)
 final_img <- count_images(seed_mask,normalize = T, removeEdgeCells = T)
 EBImage::display(final_img)
 count_cells(img_watershed)
@@ -137,6 +137,18 @@ for(u in 1:dim(st_img_test)[4]){
 }
 rm(coord.mtx)
 rm(filter)
+
+shape.features.data <- read.csv('Cell_Features_Data.csv',header=T)
+
+features.data.img <- computeFeatures.shape(cmask,rgb.imgs)
+features.data.img <- as.data.frame(features.data.img)
+features.data.img$file_ID <- image_names[[1]]
+features.data.img <- features.data.img %>% dplyr::select(.,file_ID,
+                                                         s.area,
+                                                         s.perimeter,
+                                                         s.radius.mean)
+features.data.img$cell_number <- 1:nrow(features.data.img)
+
 for (z in 2:length(read_images)){
   test_img <- image_load(images[[z]],target_size = c(1024,1024))
   img_array <- test_img %>% image_to_array() %>% '/'(255)
@@ -144,10 +156,10 @@ for (z in 2:length(read_images)){
   mask <- abind(mask_main[[z]])
   mask <- mask[,,1]
   EBImage::display(mask)
-  img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+  img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
   EBImage::display(img_watershed)
   ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-  seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4)
+  seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4)
   cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
   EBImage::display(cmask)
   cmask1 <- array_reshape(cmask,c(dim(cmask),1))
@@ -177,7 +189,19 @@ for (z in 2:length(read_images)){
   }
   rm(coord.mtx)
   rm(filter)
+  features.data.img1 <- computeFeatures.shape(cmask,rgb.imgs)
+  features.data.img1 <- as.data.frame(features.data.img1)
+  features.data.img1$file_ID <- image_names[[z]]
+  features.data.img1 <- features.data.img1 %>% dplyr::select(.,file_ID,
+                                                           s.area,
+                                                           s.perimeter,
+                                                           s.radius.mean)
+  features.data.img1$cell_number <- 1:nrow(features.data.img1)
+  features.data.img <- rbind(features.data.img,features.data.img1)
+  rm(features.data.img1)
 }
+
+#add cell numbers to features.data.img data.frames for each image - helpful to merge into final data.frame
 
 for(k in 1:length(blob_seg)) {
   blob_img <- blob_seg[[k]]
@@ -219,19 +243,190 @@ for(k in 1:length(cell_seg)) {
   }
 }
 
-secondary_analysis <- data.frame(file_ID = character(0), cell_number = numeric(0), shape_estimate = character(0), shape_percent = character(0), ID_estimate = character(0), ID_percent = character(0))
-for(i in 1:dim(shape.input)[[1]]){
-  shape.subset <- shape.input[i,c(3,4)]
-  ID.subset <- ID.input[i,c(3,4)]
-  if(shape.subset$shape_estimate[1] != ID.subset$ID_estimate[1]){
-    file_ID <- ID.input$file_ID[[i]]
-    cell_number <- ID.input$cell_number[[i]]
-    shape_estimate <- shape.subset[[1,1]]
-    ID_estimate <- ID.subset[[1,1]]
-    shape_percent <- shape.subset[[1,2]]
-    ID_percent <- ID.subset[[1,2]]
-    secondary_analysis[nrow(secondary_analysis) + 1, ] <- c(file_ID, cell_number, shape_estimate, shape_percent, ID_estimate, ID_percent)
-    ID.input$ID_estimate[i] <- 'Unknown'
-    ID.input$Percent_estimate[i] <- NA
+#secondary_analysis <- data.frame(file_ID = character(0), cell_number = numeric(0), shape_estimate = character(0), shape_percent = character(0), ID_estimate = character(0), ID_percent = character(0))
+#for(i in 1:dim(shape.input)[[1]]){
+#  shape.subset <- shape.input[i,c(3,4)]
+#  ID.subset <- ID.input[i,c(3,4)]
+#  if(shape.subset$shape_estimate[1] != ID.subset$ID_estimate[1]){
+#    file_ID <- ID.input$file_ID[[i]]
+#    cell_number <- ID.input$cell_number[[i]]
+#    shape_estimate <- shape.subset[[1,1]]
+#    ID_estimate <- ID.subset[[1,1]]
+#    shape_percent <- shape.subset[[1,2]]
+#    ID_percent <- ID.subset[[1,2]]
+#    secondary_analysis[nrow(secondary_analysis) + 1, ] <- c(file_ID, cell_number, shape_estimate, shape_percent, ID_estimate, ID_percent)
+#  }
+#}
+
+total_results <- merge(shape.input,ID.input,by=c("file_ID","cell_number"))
+colnames(total_results)[4] <- 'Shape.Estimate'
+colnames(total_results)[6] <- 'ID.Estimate'
+
+prediction_labels <- data.frame(prediction_results = character(0))
+for(i in 1:dim(total_results)[1]){
+  value1 <- as.numeric(paste0(sub(" %", replacement = "", x=total_results[i,4])))
+  value2 <- as.numeric(paste0(sub(" %", replacement = "", x=total_results[i,6])))
+  predict1 <- total_results[i,3]
+  predict2 <- total_results[i,5]
+
+  value_result1 <- (value1 < 75)
+  value_result2 <- (value2 < 75)
+  value_result <- as.logical(value_result1 + value_result2)
+
+  try(if(predict1 == predict2 & value_result == FALSE){
+    value1 <- "POSITIVE"
+    prediction_labels[nrow(prediction_labels) + 1, ] <- c(value1)
+  })
+  try(if(predict1 != predict2 & value_result == FALSE){
+    value3 <- "ESTIMATE"
+    prediction_labels[nrow(prediction_labels) + 1, ] <- c(value3)
+  })
+  try(if(predict1 == predict2 & value_result == TRUE){
+    value3 <- "ESTIMATE"
+    prediction_labels[nrow(prediction_labels) + 1, ] <- c(value3)
+  })
+  try(if(predict1 != predict2 & value_result == TRUE){
+    value4 <- "NEGATIVE"
+    prediction_labels[nrow(prediction_labels) + 1, ] <- c(value4)
+  })
+}
+
+total_results <- cbind(total_results,prediction_labels)
+
+total_results <- merge(total_results,features.data.img,by=c("file_ID","cell_number"))
+total_results$cell_number <- as.character(total_results$cell_number)
+total_results <- total_results %>%
+  mutate(cell_number = recode(cell_number,
+                        '1' = '01',
+                        '2' = '02',
+                        '3' = '03',
+                        '4' = '04',
+                        '5' = '05',
+                        '6' = '06',
+                        '7' = '07',
+                        '8' = '08',
+                        '9' = '09'
+  ))
+total_results <- total_results[order(total_results$cell_number,decreasing=FALSE),]
+total_results <- total_results[order(total_results$file_ID,decreasing=FALSE),]
+
+total_results <- cbind(total_results,cell.coord)
+
+analysis_type <- "20X"
+new_shape.features.data <- subset(shape.features.data,Objective==analysis_type)
+
+for(y in 1:dim(total_results)[1]){
+  cell_row_data <- total_results[y,]
+  if(cell_row_data$ID_estimate == "Microcystis"){
+    if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus1[4],new_shape.features.data$SD_Plus1[4])==FALSE){
+      total_results$ID_estimate[y] <- "UNKNOWN"
+      total_results$prediction_results[y] <- "POSITIVE"
+    } else{}
+  } else if(cell_row_data$ID_estimate == "Dolichospermum"){
+    if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus1[1],new_shape.features.data$SD_Plus1[1])==FALSE){
+      total_results$ID_estimate[y] <- "UNKNOWN"
+      total_results$prediction_results[y] <- "POSITIVE"
+    } else{}
   }
 }
+
+test_ID.input <- subset(total_results,file_ID==image_names[[1]])
+test_img <- image_load(images[[1]],target_size = c(1024,1024))
+img_array <- test_img %>% image_to_array() %>% '/'(255)
+rgb.imgs <- Image(img_array,colormode = Color)
+test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+
+draw_key_polygon3 <- function(data, params, size) {
+  lwd <- min(data$size, min(size) / 14)
+
+  grid::rectGrob(
+    width = grid::unit(0.8, "npc"),
+    height = grid::unit(0.8, "npc"),
+    gp = grid::gpar(
+      col = data$colour,
+      fill = alpha(data$fill, data$alpha),
+      lty = data$linetype,
+      lwd = lwd * .pt,
+      linejoin = "mitre"
+    ))
+}
+
+GeomRect$draw_key = draw_key_polygon3
+
+estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+                                     aes(xmin = xmin, xmax = xmax,
+                                         ymin = ymin, ymax = ymax,
+                                         fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                     alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+  scale_colour_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+  scale_fill_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+  scale_linetype_manual(name="Prediction Results",
+                        labels = c("Estimate", "Negative", "Positive"),
+                        values = c(2,3,1))+
+  guides(linetype = guide_legend(override.aes = list(
+    linetype = c("dashed", "dotted", "solid"),
+    color = c("black","black", "black"),
+    fill = c(NA,NA,NA)))) +
+  theme(legend.text = element_text(size=15),
+        legend.title = element_text(size=20),
+        legend.key.size = unit(0.75,"cm"),
+        legend.spacing.y = unit(5, 'mm'),
+        #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+        #                          colour = c("black","black","black",NA)),
+        legend.position = "right")
+estimate_list <- list(estimate_plot)
+for(r in 2:length(read_images)) {
+  test_ID.input <- subset(total_results,file_ID==image_names[[r]])
+  test_img <- image_load(images[[r]],target_size = c(1024,1024))
+  img_array <- test_img %>% image_to_array() %>% '/'(255)
+  rgb.imgs <- Image(img_array,colormode = Color)
+  test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
+
+  draw_key_polygon3 <- function(data, params, size) {
+    lwd <- min(data$size, min(size) / 14)
+
+    grid::rectGrob(
+      width = grid::unit(0.8, "npc"),
+      height = grid::unit(0.8, "npc"),
+      gp = grid::gpar(
+        col = data$colour,
+        fill = alpha(data$fill, data$alpha),
+        lty = data$linetype,
+        lwd = lwd * .pt,
+        linejoin = "mitre"
+      ))
+  }
+
+  GeomRect$draw_key = draw_key_polygon3
+
+  estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+                                       aes(xmin = xmin, xmax = xmax,
+                                           ymin = ymin, ymax = ymax,
+                                           fill = ID_estimate, colour = ID_estimate, linetype = prediction_results),
+                                       alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+    scale_colour_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+    scale_fill_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+    scale_linetype_manual(name="Prediction Results",
+                          labels = c("Estimate", "Negative", "Positive"),
+                          values = c(2,3,1))+
+    guides(linetype = guide_legend(override.aes = list(
+      linetype = c("dashed", "dotted", "solid"),
+      color = c("black","black", "black"),
+      fill = c(NA,NA,NA)))) +
+    theme(legend.text = element_text(size=15),
+          legend.title = element_text(size=20),
+          legend.key.size = unit(0.75,"cm"),
+          legend.spacing.y = unit(5, 'mm'),
+          #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+          #                          colour = c("black","black","black",NA)),
+          legend.position = "right")
+  estimate_list1 <- list(estimate_plot)
+  estimate_list <- append(estimate_list,estimate_list1)
+}
+
+plot(estimate_list[[3]])
+
+estimate_results <- subset(total_results,prediction_labels == c("TRUE","ESTIMATE"))
+
+#estimate_cell_num <- as.numeric(dim(estimate_results)[1])
+#cell.den <- cellcount::cell_density(estimate_cell_num, FOV = 0.0726, images = 10, filtration.area = 213.8, volume = 1, total.volume = 5)
