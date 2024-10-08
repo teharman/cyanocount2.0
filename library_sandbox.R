@@ -74,6 +74,29 @@ watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50
     return(image3)
   }
 }
+watershed_convert2 <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
+  if (removeEdgeCells == TRUE){
+    image <- thresh(x, w = w, h = h, offset = offset)
+    image1 <- EBImage::watershed(distmap(image), tolerance = tolerance, ext = ext)
+    image2 <-fillHull(image1)
+    nf <- computeFeatures.shape(image2)
+    nr <- which(nf[, "s.area"] < areathresh)
+    image3 <- rmObjects(image2, nr)
+    dims <- dim(image3)
+    border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
+    ids <- unique(border1[which(border1 != 0)])
+    inner <- rmObjects(image3, ids)
+    return(inner)
+  } else{
+    image <- thresh(x, w = w, h = h, offset = offset)
+    image1 <- fillHull(image)
+    image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
+    nf <- computeFeatures.shape(image2)
+    nr <- which(nf[, "s.area"] < areathresh)
+    image3 <- rmObjects(image2, nr)
+    return(image3)
+  }
+}
 single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1) {
   image <- thresh(x, w = w, h = h, offset = offset)
   image1 <- fillHull(image)
@@ -91,11 +114,11 @@ single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_2/")
-image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_2/")
-image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_2/')
-mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/True_Mask/")
-mask_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/True_Mask/')
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/Raw_Imgs/Orient_3_Batch_06/")
+image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/Raw_Imgs/Orient_3_Batch_06/")
+image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/Raw_Imgs/Orient_3_Batch_06/')
+mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/True_Mask/")
+mask_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/True_Mask/')
 
 images <- list.files(img_dir, pattern = NULL, full.name = F)
 
@@ -139,7 +162,7 @@ grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 
 EBImage::display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 EBImage::display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.05)
+binary_img<-lapply(neg_imgs, binary, adj = 0.125)
 EBImage::display(binary_img[[y]])
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.1) #background intensity threshold adjustment
 img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=150,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
