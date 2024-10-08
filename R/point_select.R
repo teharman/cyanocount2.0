@@ -34,7 +34,7 @@ point_select <- function(){
 
 
 
-  myImgResource<-('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_Logo.png')
+  myImgResource<-('./CyanoSCOPE_Logo_new.png')
 
   ui1 <- fluidPage(
     useShinyjs(),
