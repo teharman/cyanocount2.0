@@ -31,7 +31,7 @@ library(spsComps)
 library(stringr)
 library(pbapply)
 
-img_dir <- ("X:/CyanoSCOPE_imgs/Test_03/")
+img_dir <- ("X:/CyanoSCOPE_imgs/OMAX_Test/")
 
 images_list <- data.frame(image_names = character(0))
 images <- list.files(img_dir, full.name = T)
@@ -46,7 +46,7 @@ shape.input <- data.frame(file_ID = character(0), cell_number = numeric(0), shap
 cell.coord <- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
 cell.count <- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
 
-segmentation_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_5/', custom_objects = NULL, compile = TRUE)
+segmentation_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_7/', custom_objects = NULL, compile = TRUE)
 test_img <- image_load(images[[1]],target_size = c(1024,1024))
 new_array <- test_img %>% image_to_array() %>% array_reshape(.,c(1,dim(.))) %>% '/'(255)
 mask_main <- segmentation_model %>% predict(new_array) %>%
@@ -59,7 +59,7 @@ for (z in 2:length(read_images)){
   mask_main <- append(mask_main, mask)
 }
 
-EBImage::display(mask_main[[3]])
+EBImage::display(mask_main[[7]])
 
 shape_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/shape_model_test_01/', custom_objects = NULL, compile = TRUE)
 predict_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
