@@ -1,7 +1,3 @@
-Sys.setenv(RETICULATE_PYTHON="C:/Users/Tyler.Harman/AppData/Local/r-miniconda/envs/r-reticulate")
-py_config()
-reticulate::py_install('pillow')
-
 library(reticulate)
 library(keras)
 library(tensorflow)
@@ -12,7 +8,12 @@ library(magick)
 library(tidyr)
 library(tidyverse)
 library(dplyr)
-library(tiff)
+
+#virtualenv_create('C:/Users/Tyler.Harman/AppData/Local/miniconda3/envs/new-reticulate',python=install_python())
+#tensorflow::install_tensorflow(envname = "C:/Users/Tyler.Harman/AppData/Local/miniconda3/envs/new-reticulate/",version='2.10-cpu',extra_packages = c('pillow','scipy'))
+#reticulate::py_install("numpy<2", envname = "C:/Users/Tyler.Harman/AppData/Local/miniconda3/envs/new-reticulate", method = "virtualenv")
+Sys.setenv(RETICULATE_PYTHON="C:\\Users\\Tyler.Harman\\AppData\\Local\\miniconda3\\envs\\new-reticulate\\Scripts\\python.exe")
+reticulate::py_config()
 #__________________________________________________________________________
 
 #Write from TIFF to PNG - save to main image folder
@@ -34,39 +35,37 @@ for(u in 1:length(images)){
 
 ####new model####
 
-original_dir<-path("X:/CyanoSCOPE_imgs/Draft_Model/shape_data/All_Data")
-new_base_dir<-path("X:/CyanoSCOPE_imgs/Draft_Model/models/shape_model")
+original_dir<-path("D:/CyanoSCOPE_imgs/Draft_Model/shape_data/All_Data")
+new_base_dir<-path("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model")
 
 make_subset_20X<-function(subset_name, start_index, end_index){
-  for (category in c("EdA", "F192", "F271")){
-    file_name<-glue::glue("{category}_AS_20x_blob ({start_index:end_index}).png")
+  for (category in c("F108", "F192", "F199", "F271")){
+    file_name<-glue::glue("{category}_AS_20X_blob ({start_index:end_index}).png")
     dir_create(new_base_dir / subset_name / category)
     file_copy(original_dir / file_name ,
               new_base_dir / subset_name / category / file_name)
   }
 }
 
-make_subset_40X<-function(subset_name, start_index, end_index){
-  for (category in c("EdA", "F192", "F271")){
-    file_name<-glue::glue("{category}_AS_40x_blob ({start_index:end_index}).png")
-    dir_create(new_base_dir / subset_name / category)
-    file_copy(original_dir / file_name ,
-              new_base_dir / subset_name / category / file_name)
-  }
-}
+#make_subset_40X<-function(subset_name, start_index, end_index){
+#  for (category in c("EdA", "F192", "F271")){
+#    file_name<-glue::glue("{category}_40x_color ({start_index:end_index}).png")
+#    dir_create(new_base_dir / subset_name / category)
+#    file_copy(original_dir / file_name ,
+#              new_base_dir / subset_name / category / file_name)
+#  }
+#}
 
-make_subset_20X("train", start_index = 1, end_index = 3500)
-make_subset_40X("train", start_index = 1, end_index = 750)
+make_subset_20X("train", start_index = 1, end_index = 5500)
+#make_subset_40X("train", start_index = 1, end_index = 750)
 
-make_subset_20X("validation", start_index = 3501, end_index = 4500)
-make_subset_40X("validation", start_index = 751, end_index = 1250)
+make_subset_20X("validation", start_index = 5501, end_index = 6500)
+#make_subset_40X("validation", start_index = 751, end_index = 1250)
 
-make_subset_20X("test", start_index = 4501, end_index = 8000)
-make_subset_40X("test", start_index = 1251, end_index = 2000)
-
+make_subset_20X("test", start_index = 6501, end_index = 7000)
+#make_subset_40X("test", start_index = 1251, end_index = 2000)
 #______________________________________________________________________________#
-
-setwd("X:/CyanoSCOPE_imgs/Draft_Model/models")
+setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models")
 
 model_label<-dir("shape_model/train/")
 output_n<-length(model_label)
@@ -77,8 +76,8 @@ target_size<-c(width,height)
 rgb<-1
 
 
-path_train<-"X:/CyanoSCOPE_imgs/Draft_Model/models/shape_model/train"
-path_valid<-"X:/CyanoSCOPE_imgs/Draft_Model/models/shape_model/validation"
+path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/train"
+path_valid<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/validation"
 train_data_gen<-image_data_generator(rescale=1/255,
                                      #validation_split = 0.2
 )
@@ -126,7 +125,7 @@ model_function <- function(){
     layer_flatten() %>%
     layer_dense(units = 150, activation = 'relu') %>%
     layer_dropout(rate = 0.5) %>%
-    layer_dense(units = 3, activation = 'softmax')
+    layer_dense(units = 4, activation = 'softmax')
 
 
   model %>% compile(
@@ -154,7 +153,9 @@ hist <- model %>% fit(
   verbose = 1
 )
 
-path_test<-"X:/CyanoSCOPE_imgs/Draft_Model/models/shape_model/test"
+#______________________________________________________________________________#
+
+path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/test"
 
 test_data_gen <- image_data_generator(rescale = 1/255)
 test_images <- flow_images_from_directory(path_test,
@@ -168,7 +169,7 @@ test_images <- flow_images_from_directory(path_test,
 model %>% evaluate(test_images,
                    steps = test_images$n/batch_size)
 
-test_image <- image_load("X:/CyanoSCOPE_imgs/Draft_Model/models/shape_model/test/EdA/EdA_AS_20X_blob (4514).png",
+test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/test/F192/F192_AS_20X_blob (6514).png",
                          target_size = target_size,
                          color_mode = "grayscale")
 
@@ -181,13 +182,13 @@ pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
 pred$Probability <- paste(format(100*pred$Probability,2),"%")
 pred
 
-save_model_tf(model, "shape_model/shape_model_test_01/") #save model here
-model <- load_model_tf("shape_model/shape_model_test_01/")
+save_model_tf(model, "shape_model/shape_model/") #save model here
+model <- load_model_tf("shape_model/shape_model/")
 
 #_______________________________________________________________________
 #true vs. predicted
 
-setwd("X:/CyanoSCOPE_imgs/Draft_Model/models")
+setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models")
 
 model_label<-dir("shape_model/train/")
 output_n<-length(model_label)
@@ -195,23 +196,24 @@ output_n<-length(model_label)
 width<-150
 height<-150
 target_size<-c(width,height)
-rgb<-3
+rgb<-1
 
 batch_size<-32
 epochs<-6
 
-path_test<-"X:/CyanoSCOPE_imgs/Draft_Model/models/shape_model/test"
+path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/test"
 
-test_data_gen <- image_data_generator(rescale = 0.1/255)
+test_data_gen <- image_data_generator(rescale = 1/255)
 test_images <- flow_images_from_directory(path_test,
                                           test_data_gen,
                                           target_size = target_size,
                                           class_mode = "categorical",
                                           classes = model_label,
                                           shuffle = F,
-                                          seed = 2021)
+                                          seed = 2021,
+                                          color_mode = "grayscale")
 
-model <- load_model_tf("shape_model/shape_model_test_01/")
+model <- load_model_tf("shape_model/shape_model/")
 
 classes <- test_images$classes %>%
   factor() %>%
@@ -244,7 +246,7 @@ predictions_test <- predictions %>%
 pred_analysis <- predictions_test %>%
   #mutate(img_id = seq(1:test_images$n)) %>%
   mutate(img_id = seq(1:dim(predictions)[1])) %>%
-  gather(pred_lbl, y, EdA:F271) %>%
+  gather(pred_lbl, y, F108:F271) %>%
   group_by(img_id) %>%
   filter(y == max(y)) %>%
   arrange(img_id) %>%
@@ -253,17 +255,19 @@ pred_analysis <- predictions_test %>%
 
 pred_analysis <- pred_analysis %>%
   mutate(key = recode(key,
-                      EdA = 'Anabaena',
-                      F192 = 'Microcystis',
-                      F271 = 'Dolichospermum'))
+                      F108 = 'Microcystis_1',
+                      F192 = 'Microcystis_2',
+                      F199 = 'Dolichospermum_1',
+                      F271 = 'Dolichospermum_2'))
 
 pred_analysis <- pred_analysis %>%
   mutate(pred_lbl = recode(pred_lbl,
-                           EdA = 'Anabaena',
-                           F192 = 'Microcystis',
-                           F271 = 'Dolichospermum'))
+                           F108 = 'Microcystis_1',
+                           F192 = 'Microcystis_2',
+                           F199 = 'Dolichospermum_1',
+                           F271 = 'Dolichospermum_2'))
 
-pred_analysis_false <- pred_analysis[c(2:4,6:8),]
+pred_analysis_false <- pred_analysis[c(2:4,6:7,9:10),]
 
 p <- pred_analysis %>%
   mutate(percentage_pred = nn / n * 100) %>%
