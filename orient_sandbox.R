@@ -21,7 +21,7 @@ library(cyanocount2.0)
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_3")
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs/Batch_05")
 orient_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Microcystis_F259/40X/Raw_Imgs")
 folder_name<-basename(img_dir)
 
