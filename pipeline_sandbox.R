@@ -43,7 +43,7 @@ ui_main = fluidPage(
   theme = shinytheme("cosmo"),
   sidebarPanel(navlistPanel(
     widths=c(12,12),
-    "CyanoSCOPE - Automated Cyanobacteria Prediction and Enumeration Interface",
+    "BloomSCOPE - Automated Cyanobacteria Prediction and Enumeration Interface",
     h4(" "),
     header = div("",img(src='pics/CyanoSCOPE_Logo.png',
                         id = "CyanoSCOPE Logo", height = "140px",width = "320px",style = "position: relative; margin:-15px 0px; display:right-align;"))
@@ -54,7 +54,7 @@ ui_main = fluidPage(
   h3(" "),
   "Developed by NOAA NCCOS HAB-Forecasting Branch"),
   mainPanel(navbarPage(
-    title=h4("CyanoSCOPE Tools"),
+    title=h4("BloomSCOPE Tools"),
     tabPanel(h6("1) Image Selection and Upload"),
              fluidRow(
                shinyDirButton('path1','1) Select Images','Please select a folder containing images',FALSE,class = "btn-success",style='height:35px;width:182px;font-size:100%;display:center-align',icon=icon("folder-open")),
@@ -122,7 +122,7 @@ ui_main = fluidPage(
                       actionButton("next3", "Cell_Next", icon=icon("arrow-right"),style='height:35px;width:125px;font-size:100%;display:center-align'))
              )
     ),
-    tabPanel(h6("3) CyanoSCOPE analysis"),
+    tabPanel(h6("3) BloomSCOPE analysis"),
              fluidRow(
                actionButton("run4","1) Generate Predict Images",class = 'btn-success',style='height:35px;width:180px;font-size:80%;display:center-align',icon=icon('wrench')),
                shinyDirButton('path2','2) Select Save Directory','Please select a folder to export data/images',FALSE,class = "btn-success",style='height:35px;width:180px;font-size:80%;display:center-align',icon=icon("folder-open")),
@@ -261,7 +261,7 @@ server_main = function(input, output, session) {
     cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_5/', custom_objects = NULL, compile = TRUE)
+    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_6/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
 
@@ -959,4 +959,4 @@ server_main = function(input, output, session) {
   })
 }
 
-runGadget(ui_main, server_main, viewer = dialogViewer("CyanoSCOPE - Automated Cyanobacteria Prediction and Enumeration UI",width = 1200, height = 800))
+runGadget(ui_main, server_main, viewer = dialogViewer("BloomSCOPE - Automated Cyanobacteria Prediction and Enumeration UI",width = 1200, height = 800))
