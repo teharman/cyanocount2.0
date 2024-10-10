@@ -8,6 +8,7 @@ library(magick)
 library(tidyr)
 library(tidyverse)
 library(dplyr)
+library(glue)
 
 #virtualenv_create('C:/Users/Tyler.Harman/AppData/Local/miniconda3/envs/new-reticulate',python=install_python())
 #tensorflow::install_tensorflow(envname = "C:/Users/Tyler.Harman/AppData/Local/miniconda3/envs/new-reticulate/",version='2.10-cpu',extra_packages = c('pillow','scipy'))
@@ -35,35 +36,59 @@ for(u in 1:length(images)){
 
 ####new model####
 
-original_dir<-path("D:/CyanoSCOPE_imgs/Draft_Model/shape_data/All_Data")
+original_dir<-path("D:/CyanoSCOPE_imgs/Draft_Model/shape_data/Genus_Data")
 new_base_dir<-path("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model")
 
-make_subset_20X<-function(subset_name, start_index, end_index){
-  for (category in c("F108", "F192", "F199", "F271")){
-    file_name<-glue::glue("{category}_AS_20X_blob ({start_index:end_index}).png")
-    dir_create(new_base_dir / subset_name / category)
-    file_copy(original_dir / file_name ,
-              new_base_dir / subset_name / category / file_name)
+make_random_subset <- function(subset_name, num_images_per_category) {
+  for (category in c("Dolichospermum", "Microcystis")) {
+    # Get all image files for the current category
+    all_files <- dir_ls(original_dir,
+                        regexp = glue("{category}_AS_20X_blob \\([0-9]+\\)\\.png$"))
+
+    # Randomly select the specified number of images
+    selected_files <- sample(all_files, num_images_per_category, replace = FALSE)
+
+    # Create the destination directory
+    dest_dir <- path(new_base_dir, subset_name, category)
+    dir_create(dest_dir)
+
+    # Copy the selected files to the destination directory
+    file_copy(selected_files, dest_dir)
   }
 }
 
-#make_subset_40X<-function(subset_name, start_index, end_index){
-#  for (category in c("EdA", "F192", "F271")){
-#    file_name<-glue::glue("{category}_40x_color ({start_index:end_index}).png")
-#    dir_create(new_base_dir / subset_name / category)
-#    file_copy(original_dir / file_name ,
-#              new_base_dir / subset_name / category / file_name)
-#  }
-#}
+make_random_subset("train", num_images_per_category = 12800)
+make_random_subset("test", num_images_per_category = 3200)
 
-make_subset_20X("train", start_index = 1, end_index = 5500)
-#make_subset_40X("train", start_index = 1, end_index = 750)
+create_validation_set <- function(train_dir, val_dir, val_percentage = 0.2) {
+  for (category in c("Dolichospermum", "Microcystis")) {
+    # Path to category in training set
+    category_train_dir <- path(train_dir, category)
 
-make_subset_20X("validation", start_index = 5501, end_index = 6500)
-#make_subset_40X("validation", start_index = 751, end_index = 1250)
+    # Get all image files for the current category in training set
+    all_files <- dir_ls(category_train_dir, regexp = "\\.png$")
 
-make_subset_20X("test", start_index = 6501, end_index = 7000)
-#make_subset_40X("test", start_index = 1251, end_index = 2000)
+    # Calculate number of images for validation set
+    num_val_images <- round(length(all_files) * val_percentage)
+
+    # Randomly select images for validation set
+    val_files <- sample(all_files, num_val_images, replace = FALSE)
+
+    # Create the destination directory for validation set
+    category_val_dir <- path(val_dir, category)
+    dir_create(category_val_dir)
+
+    # Move selected files to validation directory
+    file_move(val_files, category_val_dir)
+  }
+}
+
+# Set the validation directory path
+train_dir <- paste0(new_base_dir,"/train")
+val_dir <- paste0(new_base_dir,"/validation")
+
+# Create validation set (20% of training data)
+create_validation_set(train_dir, val_dir)
 #______________________________________________________________________________#
 setwd("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models")
 
@@ -74,7 +99,6 @@ width<-150
 height<-150
 target_size<-c(width,height)
 rgb<-1
-
 
 path_train<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/train"
 path_valid<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/validation"
@@ -125,7 +149,7 @@ model_function <- function(){
     layer_flatten() %>%
     layer_dense(units = 150, activation = 'relu') %>%
     layer_dropout(rate = 0.5) %>%
-    layer_dense(units = 4, activation = 'softmax')
+    layer_dense(units = 2, activation = 'softmax')
 
 
   model %>% compile(
@@ -182,8 +206,8 @@ pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
 pred$Probability <- paste(format(100*pred$Probability,2),"%")
 pred
 
-save_model_tf(model, "shape_model/shape_model/") #save model here
-model <- load_model_tf("shape_model/shape_model/")
+save_model_tf(model, "shape_model/shape_model01/") #save model here
+model <- load_model_tf("shape_model/shape_model01/")
 
 #_______________________________________________________________________
 #true vs. predicted
@@ -246,28 +270,14 @@ predictions_test <- predictions %>%
 pred_analysis <- predictions_test %>%
   #mutate(img_id = seq(1:test_images$n)) %>%
   mutate(img_id = seq(1:dim(predictions)[1])) %>%
-  gather(pred_lbl, y, F108:F271) %>%
+  gather(pred_lbl, y, Dolichospermum:Microcystis) %>%
   group_by(img_id) %>%
   filter(y == max(y)) %>%
   arrange(img_id) %>%
   group_by(key, n, pred_lbl) %>%
   count()
 
-pred_analysis <- pred_analysis %>%
-  mutate(key = recode(key,
-                      F108 = 'Microcystis_1',
-                      F192 = 'Microcystis_2',
-                      F199 = 'Dolichospermum_1',
-                      F271 = 'Dolichospermum_2'))
-
-pred_analysis <- pred_analysis %>%
-  mutate(pred_lbl = recode(pred_lbl,
-                           F108 = 'Microcystis_1',
-                           F192 = 'Microcystis_2',
-                           F199 = 'Dolichospermum_1',
-                           F271 = 'Dolichospermum_2'))
-
-pred_analysis_false <- pred_analysis[c(2:4,6:7,9:10),]
+pred_analysis_false <- pred_analysis[c(2:3),]
 
 p <- pred_analysis %>%
   mutate(percentage_pred = nn / n * 100) %>%
@@ -353,9 +363,9 @@ best_results <- tuning_results[which(
 best_results<-as.data.frame(best_results)
 
 model <- model_function(learning_rate =
-                          best_results$best_results[1],
-                        dropoutrate = best_results$best_results[2],
-                        n_dense = best_results$best_results[3])
+                          best_results$learning_rate[1],
+                        dropoutrate = best_results$dropoutrate[1],
+                        n_dense = best_results$n_dense[1])
 
 hist <- model %>% fit(
   train_images,
@@ -366,21 +376,9 @@ hist <- model %>% fit(
   verbose = 1
 )
 
-save_model_tf(model, "ID_predict_model/ID_model_test_mod/")
+save_model_tf(model, "shape_model/shape_model_01mod/")
 
-model <- load_model_tf("ID_predict_model/ID_model_test_mod/")
-
-test_image <- image_load("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/test_imgs/20x_Img12/ 20x_Img12 _cell_10.tiff",
-                         target_size = target_size)
-
-x <- image_to_array(test_image)
-x <- array_reshape(x, c(1, dim(x)))
-x <- x/255
-pred <- model %>% predict(x)
-pred <- data.frame("Species" = model_label, "Probability" = t(pred))
-pred <- pred[order(pred$Probability, decreasing=T),][1:5,]
-pred$Probability <- paste(format(100*pred$Probability,2),"%")
-pred
+model <- load_model_tf("shape_model/shape_model_01mod/")
 
 classes <- test_images$classes %>%
   factor() %>%
@@ -420,17 +418,7 @@ pred_analysis <- predictions_test %>%
   group_by(key, n, pred_lbl) %>%
   count()
 
-pred_analysis <- pred_analysis %>%
-  mutate(key = recode(key,
-                      EdA = 'Anabaena',
-                      F192 = 'Microcystis',
-                      F271 = 'Dolichospermum'))
-
-pred_analysis <- pred_analysis %>%
-  mutate(pred_lbl = recode(pred_lbl,
-                           EdA = 'Anabaena',
-                           F192 = 'Microcystis',
-                           F271 = 'Dolichospermum'))
+pred_analysis_false <- pred_analysis[c(2:3),]
 
 p <- pred_analysis %>%
   mutate(percentage_pred = nn / n * 100) %>%
@@ -439,22 +427,29 @@ p <- pred_analysis %>%
              label = paste0(round(percentage_pred, 2),"%"))) +
   geom_tile() +
   scale_fill_continuous() +
-  scale_fill_gradient(low = "blue", high = "red") +
-  geom_text(color = "white",size=10) +
+  scale_fill_gradient(low = "white", high = "royalblue") +
+  geom_text(color = "black",size=10) +
+  geom_text(data=pred_analysis_false,aes(x=key,y=pred_lbl,
+                                         fill=nn/n*100,
+                                         label=paste0(round(nn/n*100,2),"%")),
+            color="red",size=10)+
   labs(x = "True class",
        y = "Predicted class",
-       fill = "Percentage\nof \npredictions")+
+       fill = "Percentage\nof \npredictions",
+       #title = "True v. predicted class labels",
+       #subtitle = "Percentage of test images predicted for each label"
+  )+
   theme(
     plot.margin=unit(c(1,1,1,1),"cm"),
     plot.title = element_text(size=35),
     plot.subtitle = element_text(size=20),
     axis.title.x = element_text(size=25,vjust=-2),
     axis.title.y = element_text(size=25,vjust=4),
-    axis.text.x = element_text(size=25),
-    axis.text.y = element_text(size=25,angle=45,hjust=1,vjust=-1),
-    legend.text = element_blank(),
-    legend.title = element_blank())
+    axis.text.x = element_text(size=20),
+    axis.text.y = element_text(size=20,angle=45,hjust=1,vjust=-1),
+    legend.text = element_text(size=20),
+    legend.title = element_text(size=20))
 
-png("Predict_ModelMod_Output_01.png", height = 25, width = 30, units = 'cm', res = 300)
+png("Shape_Model_Output_01mod.png", height = 25, width = 30, units = 'cm', res = 300)
 p
 dev.off()
