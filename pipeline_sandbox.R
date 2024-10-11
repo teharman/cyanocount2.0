@@ -45,7 +45,7 @@ ui_main = fluidPage(
     widths=c(12,12),
     "BloomSCOPE - Automated Cyanobacteria Prediction and Enumeration Interface",
     h4(" "),
-    header = div("",img(src='pics/CyanoSCOPE_Logo.png',
+    header = div("",img(src='pics/BloomSCOPE_Logo.png',
                         id = "CyanoSCOPE Logo", height = "140px",width = "320px",style = "position: relative; margin:-15px 0px; display:right-align;"))
   ),
   h3(" "),
@@ -178,8 +178,8 @@ server_main = function(input, output, session) {
     if(input$selectData == '20X'){
       analysis_type<<-("20X")
     }
-    else if(input$selectData == "40X"){
-      analysis_type<<-("40X")
+    else if(input$selectData == "20X"){
+      analysis_type<<-("20X")
     }
   })
 
@@ -261,7 +261,7 @@ server_main = function(input, output, session) {
     cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
-    model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_6/', custom_objects = NULL, compile = TRUE)
+    model <<- load_model_tf('./models/binary_segmentation/updated_test_model_7/', custom_objects = NULL, compile = TRUE)
     #change the file path once models are finalized and placed in the package directory
     shinyCatch({message("***model upload complete***")}, prefix = '', position = "bottom-left")
 
@@ -286,8 +286,8 @@ server_main = function(input, output, session) {
     shinyCatch({message("applying binary segmentation - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
 
-    shape_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/shape_model_test_01/', custom_objects = NULL, compile = TRUE)
-    predict_model <<- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
+    shape_model <<- load_model_tf('./models/shape_model/shape_model01/', custom_objects = NULL, compile = TRUE)
+    predict_model <<- load_model_tf('./models/ID_prediction/ID_model02_mod/', custom_objects = NULL, compile = TRUE)
     watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 100, tolerance= 0.4, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
@@ -460,8 +460,7 @@ server_main = function(input, output, session) {
         x1 <- Image(x,colormode = Grayscale)
         x2 <- array_reshape(x1, c(1, dim(x1)))
         pred <- shape_model %>% predict(x2)
-        model_label<-c("Anabaena",
-                       "Microcystis","Dolichospermum")
+        model_label<-c("Microcystis","Dolichospermum")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
         pred$Probability <- (100*pred$Probability)
@@ -484,8 +483,7 @@ server_main = function(input, output, session) {
         x1 <- Image(x,colormode = Color)
         x2 <- array_reshape(x1, c(1, dim(x1)))
         pred <- predict_model %>% predict(x2)
-        model_label<-c("Anabaena",
-                       "Microcystis","Dolichospermum")
+        model_label<-c("Microcystis","Dolichospermum")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
         pred$Probability <- (100*pred$Probability)
@@ -693,9 +691,9 @@ server_main = function(input, output, session) {
                                              fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                          alpha = .20, linewidth = 0.15, inherit.aes = FALSE)+
       scale_colour_manual(name="ID Prediction",
-                          values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                          values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
       scale_fill_manual(name="ID Prediction",
-                        values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                        values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
       scale_linetype_manual(name="Prediction Results",
                             labels = c("Estimate", "Negative", "Positive"),
                             values = c(2,3,1))+
@@ -744,9 +742,9 @@ server_main = function(input, output, session) {
                                                fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
                                            alpha = .20, linewidth = 0.15, inherit.aes = FALSE)+
         scale_colour_manual(name="ID Prediction",
-                            values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                            values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
         scale_fill_manual(name="ID Prediction",
-                          values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                          values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
         scale_linetype_manual(name="Prediction Results",
                               labels = c("Estimate", "Negative", "Positive"),
                               values = c(2,3,1))+
@@ -848,9 +846,9 @@ server_main = function(input, output, session) {
                                                  fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
                                              alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
           scale_colour_manual(name="ID Prediction",
-                              values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                              values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
           scale_fill_manual(name="ID Prediction",
-                            values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                            values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
           scale_linetype_manual(name="Prediction Results",
                                 labels = c("Estimate", "Negative", "Positive"),
                                 values = c(2,3,1))+
@@ -923,9 +921,9 @@ server_main = function(input, output, session) {
                                                  fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
                                              alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
           scale_colour_manual(name="ID Prediction",
-                              values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                              values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
           scale_fill_manual(name="ID Prediction",
-                            values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
+                            values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
           scale_linetype_manual(name="Prediction Results",
                                 labels = c("Estimate", "Negative", "Positive"),
                                 values = c(2,3,1))+
