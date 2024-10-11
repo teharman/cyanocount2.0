@@ -258,7 +258,7 @@ server_main = function(input, output, session) {
 
   observeEvent(input$run3,{
     cell.coord <<- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
-    cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
+    #cell.count <<- data.frame(image_name = character(0), Microcystis_count = numeric(0), Dolichospermum_count = numeric(0))
     shinyCatch({message("loading segmentation model - please wait")}, prefix = '', position = "bottom-left")
     Sys.sleep(3)
     model <<- load_model_tf('./models/binary_segmentation/updated_test_model_7/', custom_objects = NULL, compile = TRUE)
@@ -287,7 +287,7 @@ server_main = function(input, output, session) {
     Sys.sleep(3)
 
     shape_model <<- load_model_tf('./models/shape_model/shape_model01/', custom_objects = NULL, compile = TRUE)
-    predict_model <<- load_model_tf('./models/ID_prediction/ID_model02_mod/', custom_objects = NULL, compile = TRUE)
+    predict_model <<- load_model_tf('./models/ID_prediction/ID_model_02mod/', custom_objects = NULL, compile = TRUE)
     watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 100, tolerance= 0.4, ext = 1, removeEdgeCells = TRUE) {
       if (removeEdgeCells == TRUE){
         image <- thresh(x, w = w, h = h, offset = offset)
@@ -460,7 +460,7 @@ server_main = function(input, output, session) {
         x1 <- Image(x,colormode = Grayscale)
         x2 <- array_reshape(x1, c(1, dim(x1)))
         pred <- shape_model %>% predict(x2)
-        model_label<-c("Microcystis","Dolichospermum")
+        model_label<-c("Dolichospermum","Microcystis")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
         pred$Probability <- (100*pred$Probability)
@@ -483,7 +483,7 @@ server_main = function(input, output, session) {
         x1 <- Image(x,colormode = Color)
         x2 <- array_reshape(x1, c(1, dim(x1)))
         pred <- predict_model %>% predict(x2)
-        model_label<-c("Microcystis","Dolichospermum")
+        model_label<-c("Dolichospermum","Microcystis")
         pred <- data.frame("Species" = model_label, "Probability" = t(pred))
         pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
         pred$Probability <- (100*pred$Probability)
@@ -511,8 +511,8 @@ server_main = function(input, output, session) {
                         list(targets=c(1), visible=TRUE, width='50'),
                         list(targets=c(2), visible=TRUE, width='50'),
                         list(targets=c(3), visible=TRUE, width='50'),
-                        list(targets=c(4), visible=TRUE, width='50'),
                         list(targets=c(5), visible=TRUE, width='50'),
+                        list(targets=c(6), visible=TRUE, width='50'),
                         list(targets='_all', visible=FALSE)
       )))
   })
@@ -537,8 +537,8 @@ server_main = function(input, output, session) {
       predict1 <- total_results[i,3]
       predict2 <- total_results[i,5]
 
-      value_result1 <- (value1 < 75)
-      value_result2 <- (value2 < 75)
+      value_result1 <- (value1 < 50)
+      value_result2 <- (value2 < 50)
       value_result <- as.logical(value_result1 + value_result2)
 
       try(if(predict1 == predict2 & value_result == FALSE){
@@ -662,7 +662,7 @@ server_main = function(input, output, session) {
    #}
    #total_results <<- cbind(total_results,cell.coord)
 
-    test_ID.input <- subset(total_results,file_ID==image_names[[1]])
+    test_ID.input <<- subset(total_results,file_ID==image_names[[1]])
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
     img_array <- test_img %>% image_to_array() %>% '/'(255)
     rgb.imgs <- Image(img_array,colormode = Color)
@@ -685,7 +685,7 @@ server_main = function(input, output, session) {
 
     GeomRect$draw_key = draw_key_polygon3
 
-    estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+    estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
                                          aes(xmin = xmin, xmax = xmax,
                                              ymin = ymin, ymax = ymax,
                                              fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
@@ -713,7 +713,7 @@ server_main = function(input, output, session) {
     estimate_list <<- list(estimate_plot)
 
     for(r in 2:length(read_images)) {
-      test_ID.input <- subset(total_results,file_ID==image_names[[r]])
+      test_ID.input <<- subset(total_results,file_ID==image_names[[r]])
       test_img <- image_load(images[[r]],target_size = c(1024,1024))
       img_array <- test_img %>% image_to_array() %>% '/'(255)
       rgb.imgs <- Image(img_array,colormode = Color)
@@ -736,7 +736,7 @@ server_main = function(input, output, session) {
 
       GeomRect$draw_key = draw_key_polygon3
 
-      estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+      estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
                                            aes(xmin = xmin, xmax = xmax,
                                                ymin = ymin, ymax = ymax,
                                                fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
