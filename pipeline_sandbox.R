@@ -35,7 +35,7 @@ library(DescTools)
 
 jscode <- "shinyjs.closeWindow = function() { window.close(); }"
 
-addResourcePath(prefix = 'pics', directoryPath = 'C:/Users/Tyler.Harman/Desktop/cellcount_work')
+addResourcePath(prefix = 'pics', directoryPath = '.')
 
 ui_main = fluidPage(
   useShinyjs(),
