@@ -695,12 +695,12 @@ server_main = function(input, output, session) {
       scale_fill_manual(name="ID Prediction",
                         values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
       scale_linetype_manual(name="Prediction Results",
-                            labels = c("Estimate", "Negative", "Positive"),
-                            values = c(2,3,1))+
+                            labels = c("Estimate", "Positive"),
+                            values = c(2,1))+
       guides(linetype = guide_legend(override.aes = list(
-        linetype = c("dashed", "dotted", "solid"),
-        color = c("black","black", "black"),
-        fill = c(NA,NA,NA)))) +
+        linetype = c("dashed", "solid"),
+        color = c("black","black"),
+        fill = c(NA,NA)))) +
       theme(legend.text = element_text(size=3),
             legend.title = element_text(size=3),
             legend.key.size = unit(0.25,"cm"),
@@ -746,12 +746,12 @@ server_main = function(input, output, session) {
         scale_fill_manual(name="ID Prediction",
                           values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
         scale_linetype_manual(name="Prediction Results",
-                              labels = c("Estimate", "Negative", "Positive"),
-                              values = c(2,3,1))+
+                              labels = c("Estimate", "Positive"),
+                              values = c(2,1))+
         guides(linetype = guide_legend(override.aes = list(
-          linetype = c("dashed", "dotted", "solid"),
-          color = c("black","black", "black"),
-          fill = c(NA,NA,NA)))) +
+          linetype = c("dashed", "solid"),
+          color = c("black","black"),
+          fill = c(NA,NA)))) +
         theme(legend.text = element_text(size=3),
               legend.title = element_text(size=3),
               legend.key.size = unit(0.25,"cm"),
@@ -850,12 +850,12 @@ server_main = function(input, output, session) {
           scale_fill_manual(name="ID Prediction",
                             values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
           scale_linetype_manual(name="Prediction Results",
-                                labels = c("Estimate", "Negative", "Positive"),
-                                values = c(2,3,1))+
+                                labels = c("Estimate", "Positive"),
+                                values = c(2,1))+
           guides(linetype = guide_legend(override.aes = list(
-            linetype = c("dashed", "dotted", "solid"),
-            color = c("black","black", "black"),
-            fill = c(NA,NA,NA)))) +
+            linetype = c("dashed", "solid"),
+            color = c("black", "black"),
+            fill = c(NA,NA)))) +
           theme(legend.text = element_text(size=10),
                 legend.title = element_text(size=10),
                 legend.key.size = unit(0.75,"cm"),
@@ -925,12 +925,12 @@ server_main = function(input, output, session) {
           scale_fill_manual(name="ID Prediction",
                             values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
           scale_linetype_manual(name="Prediction Results",
-                                labels = c("Estimate", "Negative", "Positive"),
-                                values = c(2,3,1))+
+                                labels = c("Estimate", "Positive"),
+                                values = c(2,1))+
           guides(linetype = guide_legend(override.aes = list(
-            linetype = c("dashed", "dotted", "solid"),
-            color = c("black","black", "black"),
-            fill = c(NA,NA,NA)))) +
+            linetype = c("dashed", "solid"),
+            color = c("black","black"),
+            fill = c(NA,NA)))) +
           theme(legend.text = element_text(size=10),
                 legend.title = element_text(size=10),
                 legend.key.size = unit(0.75,"cm"),
