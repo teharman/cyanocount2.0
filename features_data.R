@@ -83,22 +83,25 @@ main_data2 <- do.call('rbind',main_data2)
 main_data <- rbind(main_data1,main_data2)
 
 #Area
-cell_area_avg <- mean(main_data$x.0.s.area,na.rm=TRUE)
+area_summary <- summary(main_data$x.0.s.area)
+cell_area_avg <- area_summary[[4]]
+cell_area_1QR <- area_summary[[2]]
+cell_area_3QR <- area_summary[[5]]
 cell_area_std <- as.numeric(sd(main_data$x.0.s.area,na.rm=TRUE))
-cell_area_1QR <- (cell_area_avg)-(2*cell_area_std)
-cell_area_3QR <- (cell_area_avg)+(2*cell_area_std)
 
 #Perimeter
-cell_peri_avg <- mean(main_data$x.0.s.perimeter,na.rm=TRUE)
+perimeter_summary <- summary(main_data$x.0.s.perimeter)
+cell_peri_avg <- perimeter_summary[[4]]
+cell_peri_1QR <- perimeter_summary[[2]]
+cell_peri_3QR <- perimeter_summary[[5]]
 cell_peri_std <- as.numeric(sd(main_data$x.0.s.perimeter,na.rm=TRUE))
-cell_peri_1QR <- (cell_peri_avg)-(2*cell_peri_std)
-cell_peri_3QR <- (cell_peri_avg)+(2*cell_peri_std)
 
 #Radius
-cell_radius_avg <- mean(main_data$x.0.s.radius.mean,na.rm=TRUE)
+radius_summary <- summary(main_data$x.0.s.radius.mean)
+cell_radius_avg <- radius_summary[[4]]
+cell_radius_1QR <- radius_summary[[2]]
+cell_radius_3QR <- radius_summary[[5]]
 cell_radius_std <- as.numeric(sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
-cell_radius_1QR <- (cell_radius_avg)-(2*cell_radius_std)
-cell_radius_3QR <- (cell_radius_avg)+(2*cell_radius_std)
 
 #Compile 20X Data
 Main_Shape_Data <- data.frame(Genera = character(0),Objective = character(0),Data.Type=character(0),Average=numeric(0),Standard.Dev=numeric(0),SD_Minus2=numeric(0),SD_Plus2=numeric(0))
@@ -193,22 +196,25 @@ main_data2 <- do.call('rbind',main_data2)
 main_data <- rbind(main_data1,main_data2)
 
 #Area
-cell_area_avg <- mean(main_data$x.0.s.area,na.rm=TRUE)
+area_summary <- summary(main_data$x.0.s.area)
+cell_area_avg <- area_summary[[4]]
+cell_area_1QR <- area_summary[[2]]
+cell_area_3QR <- area_summary[[5]]
 cell_area_std <- as.numeric(sd(main_data$x.0.s.area,na.rm=TRUE))
-cell_area_1QR <- (cell_area_avg)-(2*cell_area_std)
-cell_area_3QR <- (cell_area_avg)+(2*cell_area_std)
 
 #Perimeter
-cell_peri_avg <- mean(main_data$x.0.s.perimeter,na.rm=TRUE)
+perimeter_summary <- summary(main_data$x.0.s.perimeter)
+cell_peri_avg <- perimeter_summary[[4]]
+cell_peri_1QR <- perimeter_summary[[2]]
+cell_peri_3QR <- perimeter_summary[[5]]
 cell_peri_std <- as.numeric(sd(main_data$x.0.s.perimeter,na.rm=TRUE))
-cell_peri_1QR <- (cell_peri_avg)-(2*cell_peri_std)
-cell_peri_3QR <- (cell_peri_avg)+(2*cell_peri_std)
 
 #Radius
-cell_radius_avg <- mean(main_data$x.0.s.radius.mean,na.rm=TRUE)
+radius_summary <- summary(main_data$x.0.s.radius.mean)
+cell_radius_avg <- radius_summary[[4]]
+cell_radius_1QR <- radius_summary[[2]]
+cell_radius_3QR <- radius_summary[[5]]
 cell_radius_std <- as.numeric(sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
-cell_radius_1QR <- (cell_radius_avg)-(2*cell_radius_std)
-cell_radius_3QR <- (cell_radius_avg)+(2*cell_radius_std)
 
 #Compile 20X Data
 Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Area',cell_area_avg,cell_area_std,cell_area_1QR,cell_area_3QR)
