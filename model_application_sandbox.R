@@ -31,7 +31,7 @@ library(spsComps)
 library(stringr)
 library(pbapply)
 
-img_dir <- ("X:/CyanoSCOPE_imgs/OMAX_Test/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/Pipeline_Test/AccuScope/Batch_01/")
 
 images_list <- data.frame(image_names = character(0))
 images <- list.files(img_dir, full.name = T)
@@ -46,7 +46,7 @@ shape.input <- data.frame(file_ID = character(0), cell_number = numeric(0), shap
 cell.coord <- data.frame(xmin = numeric(0), xmax = numeric(0), ymin = numeric(0), ymax = numeric(0))
 cell.count <- data.frame(image_name = character(0), Microcystis_count = numeric(0), Anabaena_count = numeric(0), Dolichospermum_count = numeric(0))
 
-segmentation_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/segmentation_model/updated_test_model_7/', custom_objects = NULL, compile = TRUE)
+segmentation_model <- load_model_tf('./models/binary_segmentation/updated_test_model_7/', custom_objects = NULL, compile = TRUE)
 test_img <- image_load(images[[1]],target_size = c(1024,1024))
 new_array <- test_img %>% image_to_array() %>% array_reshape(.,c(1,dim(.))) %>% '/'(255)
 mask_main <- segmentation_model %>% predict(new_array) %>%
@@ -61,8 +61,8 @@ for (z in 2:length(read_images)){
 
 EBImage::display(mask_main[[7]])
 
-shape_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/shape_model/shape_model_test_01/', custom_objects = NULL, compile = TRUE)
-predict_model <- load_model_tf('C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/ID_model_test_mod/', custom_objects = NULL, compile = TRUE)
+shape_model <- load_model_tf('./models/shape_model/shape_model01/', custom_objects = NULL, compile = TRUE)
+predict_model <- load_model_tf('./models/ID_prediction/ID_model_02mod/', custom_objects = NULL, compile = TRUE)
 watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 100, tolerance= 0.4, ext = 1, removeEdgeCells = TRUE) {
   if (removeEdgeCells == TRUE){
     image <- thresh(x, w = w, h = h, offset = offset)
@@ -102,13 +102,13 @@ rgb.imgs <- Image(img_array,colormode = Color)
 mask <- abind(mask_main[[1]])
 mask <- mask[,,1]
 EBImage::display(mask)
-img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+img_watershed <- watershed_convert(mask,w=17,h=17,offset=0.001,areathresh=50,tolerance=1,ext = 1,removeEdgeCells=TRUE)
 EBImage::display(img_watershed)
 final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
 EBImage::display(final_img)
 count_cells(img_watershed)
 ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4)
+seed_mask <- single_cell_convert(ctmask,w=17,h=17,offset=0.001,areathresh=50,tolerance=1,ext = 1)
 final_img <- count_images(seed_mask,normalize = T, removeEdgeCells = T)
 EBImage::display(final_img)
 count_cells(img_watershed)
@@ -156,10 +156,10 @@ for (z in 2:length(read_images)){
   mask <- abind(mask_main[[z]])
   mask <- mask[,,1]
   EBImage::display(mask)
-  img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+  img_watershed <- watershed_convert(mask,w=17,h=17,offset=0.001,areathresh=50,tolerance=1,ext = 1,removeEdgeCells=TRUE)
   EBImage::display(img_watershed)
   ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-  seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=50,tolerance=0.6,ext = 4)
+  seed_mask <- single_cell_convert(ctmask,w=17,h=17,offset=0.001,areathresh=50,tolerance=1,ext = 1)
   cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
   EBImage::display(cmask)
   cmask1 <- array_reshape(cmask,c(dim(cmask),1))
@@ -213,8 +213,7 @@ for(k in 1:length(blob_seg)) {
     x1 <- Image(x,colormode = Grayscale)
     x2 <- array_reshape(x1, c(1, dim(x1)))
     pred <- shape_model %>% predict(x2)
-    model_label<-c("Anabaena",
-      "Microcystis","Dolichospermum")
+    model_label<-c("Dolichospermum","Microcystis")
     pred <- data.frame("Species" = model_label, "Probability" = t(pred))
     pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
     pred$Probability <- (100*pred$Probability)
@@ -233,8 +232,7 @@ for(k in 1:length(cell_seg)) {
     x1 <- Image(x,colormode = Color)
     x2 <- array_reshape(x1, c(1, dim(x1)))
     pred <- predict_model %>% predict(x2)
-    model_label<-c("Anabaena",
-      "Microcystis","Dolichospermum")
+    model_label<-c("Dolichospermum","Microcystis")
     pred <- data.frame("Species" = model_label, "Probability" = t(pred))
     pred <- pred[order(pred$Probability, decreasing=T),][1:3,]
     pred$Probability <- (100*pred$Probability)
@@ -278,7 +276,7 @@ for(i in 1:dim(total_results)[1]){
     prediction_labels[nrow(prediction_labels) + 1, ] <- c(value1)
   })
   try(if(predict1 != predict2 & value_result == FALSE){
-    value3 <- "ESTIMATE"
+    value3 <- "UNDETERMINED"
     prediction_labels[nrow(prediction_labels) + 1, ] <- c(value3)
   })
   try(if(predict1 == predict2 & value_result == TRUE){
@@ -317,17 +315,34 @@ new_shape.features.data <- subset(shape.features.data,Objective==analysis_type)
 
 for(y in 1:dim(total_results)[1]){
   cell_row_data <- total_results[y,]
+  cell_row_data$s.area <- as.numeric(cell_row_data$s.area)
   if(cell_row_data$ID_estimate == "Microcystis"){
-    if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus1[4],new_shape.features.data$SD_Plus1[4])==FALSE){
-      total_results$ID_estimate[y] <- "UNKNOWN"
+    if (between(cell_row_data$s.area, new_shape.features.data$SD_Minus2[4], new_shape.features.data$SD_Plus2[4])==FALSE) {
+      total_results$ID_estimate[y] <- "Unknown"
       total_results$prediction_results[y] <- "POSITIVE"
     } else{}
   } else if(cell_row_data$ID_estimate == "Dolichospermum"){
-    if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus1[1],new_shape.features.data$SD_Plus1[1])==FALSE){
-      total_results$ID_estimate[y] <- "UNKNOWN"
+    if (between(cell_row_data$s.area, new_shape.features.data$SD_Minus2[1], new_shape.features.data$SD_Plus2[1])==FALSE) {
+      total_results$ID_estimate[y] <- "Unknown"
       total_results$prediction_results[y] <- "POSITIVE"
     } else{}
   }
+}
+
+for(y in 1:dim(total_results)[1]){
+  cell_row_data <- total_results[y,]
+  if(cell_row_data$prediction_results == "UNDETERMINED"){
+    total_results$ID_estimate[y] <- "Undetermined"
+    total_results$prediction_results[y] <- "ESTIMATE"
+  } else{}
+}
+
+for(y in 1:dim(total_results)[1]){
+  cell_row_data <- total_results[y,]
+  if(cell_row_data$prediction_results == "NEGATIVE"){
+    total_results$ID_estimate[y] <- "Unknown"
+    total_results$prediction_results[y] <- "POSITIVE"
+  } else{}
 }
 
 test_ID.input <- subset(total_results,file_ID==image_names[[1]])
@@ -353,28 +368,54 @@ draw_key_polygon3 <- function(data, params, size) {
 
 GeomRect$draw_key = draw_key_polygon3
 
-estimate_plot <- test_img1+geom_rect(data = test_ID.input,
-                                     aes(xmin = xmin, xmax = xmax,
-                                         ymin = ymin, ymax = ymax,
-                                         fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
-                                     alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
-  scale_colour_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
-  scale_fill_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
-  scale_linetype_manual(name="Prediction Results",
-                        labels = c("Estimate", "Negative", "Positive"),
-                        values = c(2,3,1))+
-  guides(linetype = guide_legend(override.aes = list(
-    linetype = c("dashed", "dotted", "solid"),
-    color = c("black","black", "black"),
-    fill = c(NA,NA,NA)))) +
-  theme(legend.text = element_text(size=15),
-        legend.title = element_text(size=20),
-        legend.key.size = unit(0.75,"cm"),
-        legend.spacing.y = unit(5, 'mm'),
-        #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
-        #                          colour = c("black","black","black",NA)),
-        legend.position = "right")
-estimate_list <- list(estimate_plot)
+if(length(unique(test_ID.input$prediction_results))==2){
+  estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+                                       aes(xmin = xmin, xmax = xmax,
+                                           ymin = ymin, ymax = ymax,
+                                           fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                       alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+    scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+    scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+    scale_linetype_manual(name="Prediction Results",
+                          labels = c("Estimate", "Positive"),
+                          values = c(2,1))+
+    guides(linetype = guide_legend(override.aes = list(
+      linetype = c("dashed", "solid"),
+      color = c("black","black"),
+      fill = c(NA,NA)))) +
+    theme(legend.text = element_text(size=15),
+          legend.title = element_text(size=20),
+          legend.key.size = unit(0.75,"cm"),
+          legend.spacing.y = unit(5, 'mm'),
+          #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+          #                          colour = c("black","black","black",NA)),
+          legend.position = "right")
+  estimate_list <- list(estimate_plot)
+} else{
+  estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+                                       aes(xmin = xmin, xmax = xmax,
+                                           ymin = ymin, ymax = ymax,
+                                           fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                       alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+    scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+    scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+    scale_linetype_manual(name="Prediction Results",
+                          labels = c("Positive"),
+                          values = c(1))+
+    guides(linetype = guide_legend(override.aes = list(
+      linetype = c("solid"),
+      color = c("black"),
+      fill = c(NA)))) +
+    theme(legend.text = element_text(size=15),
+          legend.title = element_text(size=20),
+          legend.key.size = unit(0.75,"cm"),
+          legend.spacing.y = unit(5, 'mm'),
+          #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+          #                          colour = c("black","black","black",NA)),
+          legend.position = "right")
+  estimate_list <- list(estimate_plot)
+}
+
 for(r in 2:length(read_images)) {
   test_ID.input <- subset(total_results,file_ID==image_names[[r]])
   test_img <- image_load(images[[r]],target_size = c(1024,1024))
@@ -399,32 +440,58 @@ for(r in 2:length(read_images)) {
 
   GeomRect$draw_key = draw_key_polygon3
 
-  estimate_plot <- test_img1+geom_rect(data = test_ID.input,
-                                       aes(xmin = xmin, xmax = xmax,
-                                           ymin = ymin, ymax = ymax,
-                                           fill = ID_estimate, colour = ID_estimate, linetype = prediction_results),
-                                       alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
-    scale_colour_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
-    scale_fill_manual(values = c('Dolichospermum' = "gold",'Microcystis' = "magenta",'Anabaena' = "royalblue",'UNKNOWN' = "black"))+
-    scale_linetype_manual(name="Prediction Results",
-                          labels = c("Estimate", "Negative", "Positive"),
-                          values = c(2,3,1))+
-    guides(linetype = guide_legend(override.aes = list(
-      linetype = c("dashed", "dotted", "solid"),
-      color = c("black","black", "black"),
-      fill = c(NA,NA,NA)))) +
-    theme(legend.text = element_text(size=15),
-          legend.title = element_text(size=20),
-          legend.key.size = unit(0.75,"cm"),
-          legend.spacing.y = unit(5, 'mm'),
-          #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
-          #                          colour = c("black","black","black",NA)),
-          legend.position = "right")
-  estimate_list1 <- list(estimate_plot)
-  estimate_list <- append(estimate_list,estimate_list1)
+  if(length(unique(test_ID.input$prediction_results))==2){
+    estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+                                         aes(xmin = xmin, xmax = xmax,
+                                             ymin = ymin, ymax = ymax,
+                                             fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                         alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+      scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+      scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+      scale_linetype_manual(name="Prediction Results",
+                            labels = c("Estimate", "Positive"),
+                            values = c(2,1))+
+      guides(linetype = guide_legend(override.aes = list(
+        linetype = c("dashed", "solid"),
+        color = c("black","black"),
+        fill = c(NA,NA)))) +
+      theme(legend.text = element_text(size=15),
+            legend.title = element_text(size=20),
+            legend.key.size = unit(0.75,"cm"),
+            legend.spacing.y = unit(5, 'mm'),
+            #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+            #                          colour = c("black","black","black",NA)),
+            legend.position = "right")
+    estimate_list1 <- list(estimate_plot)
+    estimate_list <- append(estimate_list,estimate_list1)
+  } else{
+    estimate_plot <- test_img1+geom_rect(data = test_ID.input,
+                                         aes(xmin = xmin, xmax = xmax,
+                                             ymin = ymin, ymax = ymax,
+                                             fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                         alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+      scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+      scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+      scale_linetype_manual(name="Prediction Results",
+                            labels = c("Positive"),
+                            values = c(1))+
+      guides(linetype = guide_legend(override.aes = list(
+        linetype = c("solid"),
+        color = c("black"),
+        fill = c(NA)))) +
+      theme(legend.text = element_text(size=15),
+            legend.title = element_text(size=20),
+            legend.key.size = unit(0.75,"cm"),
+            legend.spacing.y = unit(5, 'mm'),
+            #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+            #                          colour = c("black","black","black",NA)),
+            legend.position = "right")
+    estimate_list1 <- list(estimate_plot)
+    estimate_list <- append(estimate_list,estimate_list1)
+  }
 }
 
-plot(estimate_list[[3]])
+plot(estimate_list[[1]])
 
 estimate_results <- subset(total_results,prediction_labels == c("TRUE","ESTIMATE"))
 
