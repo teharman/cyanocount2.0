@@ -215,19 +215,6 @@ server_main = function(input, output, session) {
     beepr::beep(sound=1)
   })
 
-  #observeEvent(input[["previous"]], {
-  #  index(max(index()-1, 1))
-  #})
-  #observeEvent(input[["next"]], {
-  #  index(min(index()+1, length(images)))
-  #})
-  #observeEvent(input$update2,{
-  #  output$current_image_plot <- renderPlot({
-  #    loaded_image <- magick::image_ggplot(image_read(read_images[[index()]]))
-  #    loaded_image
-  #  },res=300,width=400,height=400)
-  #})
-
   ####server - tab 2####
   total_results <<- data.frame(file_ID = character(0), cell_number = numeric(0), Shape.Estimate = character(0), Shape.Percent = numeric(0), ID.Estimate = character(0), ID.Percent = numeric(0))
   shape.input <<- data.frame(file_ID = character(0), cell_number = numeric(0), Shape.Estimate = character(0), Shape.Percent = numeric(0))
@@ -327,13 +314,13 @@ server_main = function(input, output, session) {
     mask <- abind(mask_main[[1]])
     mask <- mask[,,1]
     EBImage::display(mask)
-    img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+    img_watershed <- watershed_convert(mask,w=17,h=17,offset=0.001,areathresh=100,tolerance=1,ext = 1,removeEdgeCells=TRUE)
     EBImage::display(img_watershed)
     final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
     EBImage::display(final_img)
     count_cells(img_watershed)
     ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-    seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4)
+    seed_mask <- single_cell_convert(ctmask,w=17,h=17,offset=0.001,areathresh=100,tolerance=1,ext = 1)
     final_img <- count_images(seed_mask,normalize = T, removeEdgeCells = T)
     EBImage::display(final_img)
     count_cells(img_watershed)
@@ -380,9 +367,9 @@ server_main = function(input, output, session) {
       rgb.imgs <- Image(img_array,colormode = Color)
       mask <- abind(mask_main[[z]])
       mask <- mask[,,1]
-      img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
+      img_watershed <- watershed_convert(mask,w=17,h=17,offset=0.001,areathresh=100,tolerance=1,ext = 1,removeEdgeCells=TRUE)
       ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-      seed_mask <- single_cell_convert(ctmask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4)
+      seed_mask <- single_cell_convert(ctmask,w=17,h=17,offset=0.001,areathresh=100,tolerance=1,ext = 1)
       cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
       cmask1 <- array_reshape(cmask,c(dim(cmask),1))
       segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
@@ -546,7 +533,7 @@ server_main = function(input, output, session) {
         prediction_labels[nrow(prediction_labels) + 1, ] <<- c(value1)
       })
       try(if(predict1 != predict2 & value_result == FALSE){
-        value3 <- "ESTIMATE"
+        value3 <- "UNDETERMINED"
         prediction_labels[nrow(prediction_labels) + 1, ] <<- c(value3)
       })
       try(if(predict1 == predict2 & value_result == TRUE){
@@ -583,84 +570,35 @@ server_main = function(input, output, session) {
     new_shape.features.data <<- subset(shape.features.data,Objective==analysis_type)
 
     for(y in 1:dim(total_results)[1]){
-      cell_row_data <<- total_results[y,]
+      cell_row_data <- total_results[y,]
       if(cell_row_data$ID.Estimate == "Microcystis"){
-        if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus2[4],new_shape.features.data$SD_Plus2[4])==TRUE){
-          total_results$ID.Estimate[y] <<- "UNKNOWN"
+        if (between(cell_row_data$s.area, new_shape.features.data$SD_Minus2[4], new_shape.features.data$SD_Plus2[4])==FALSE){
+          total_results$ID.Estimate[y] <<- "Unknown"
           total_results$prediction_results[y] <<- "POSITIVE"
         } else{}
       } else if(cell_row_data$ID.Estimate == "Dolichospermum"){
-        if(cell_row_data$s.area %][% c(new_shape.features.data$SD_Minus2[1],new_shape.features.data$SD_Plus2[1])==TRUE){
-          total_results$ID.Estimate[y] <<- "UNKNOWN"
+        if (between(cell_row_data$s.area, new_shape.features.data$SD_Minus2[1], new_shape.features.data$SD_Plus2[1])==FALSE){
+          total_results$ID.Estimate[y] <<- "Unknown"
           total_results$prediction_results[y] <<- "POSITIVE"
         } else{}
       }
     }
 
-   #watershed_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1, removeEdgeCells = TRUE) {
-   #  if (removeEdgeCells == TRUE){
-   #    image <- thresh(x, w = w, h = h, offset = offset)
-   #    image1 <- fillHull(image)
-   #    image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
-   #    nf <- computeFeatures.shape(image2)
-   #    nr <- which(nf[, "s.area"] < areathresh)
-   #    image3 <- rmObjects(image2, nr)
-   #    dims <- dim(image3)
-   #    border1 <- c(image3[1:dims[1], 1], image3[1:dims[1], dims[2]], image3[1, 1:dims[2]], image3[dims[1], 1:dims[2]])
-   #    ids <- unique(border1[which(border1 != 0)])
-   #    inner <- rmObjects(image3, ids)
-   #    return(inner)
-   #  } else{
-   #    image <- thresh(x, w = w, h = h, offset = offset)
-   #    image1 <- fillHull(image)
-   #    image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
-   #    nf <- computeFeatures.shape(image2)
-   #    nr <- which(nf[, "s.area"] < areathresh)
-   #    image3 <- rmObjects(image2, nr)
-   #    return(image3)
-   #  }
-   #}
-   #single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 50, tolerance= 0.5, ext = 1) {
-   #  image <- thresh(x, w = w, h = h, offset = offset)
-   #  image1 <- fillHull(image)
-   #  image2 <- EBImage::watershed(distmap(image1), tolerance = tolerance, ext = ext)
-   #  nf <- computeFeatures.shape(image2)
-   #  nr <- which(nf[, "s.area"] < areathresh)
-   #  image3 <- rmObjects(image2, nr)
-   #  return(image3)
-   #}
-   #for(k in 1:length(images)) {
-   #  cell_img <- cell_seg[[k]]
-   #  test_img <- image_load(images[[k]],target_size = c(1024,1024))
-   #  img_array <- test_img %>% image_to_array() %>% '/'(255)
-   #  rgb.imgs <- Image(img_array,colormode = Color)
-   #  mask <- abind(mask_main[[k]])
-   #  mask <- mask[,,1]
-   #  display(mask)
-   #  img_watershed <- watershed_convert(mask,w=25,h=25,offset=0.001,areathresh=100,tolerance=0.6,ext = 4,removeEdgeCells=TRUE)
-   #  final_img <- count_images(img_watershed,normalize = T, removeEdgeCells = T)
-   #  EBImage::display(final_img)
-   #  ctmask <- opening(img_watershed>0.1,makeBrush(5,shape='disc'))
-   #  seed_mask <- single_cell_convert(ctmask)
-   #  display(seed_mask)
-   #  cmask <- propagate(mask,seeds=seed_mask,mask=ctmask,lambda = 10^1)
-   #  segmented <- paintObjects(cmask,rgb.imgs,col = c('black','orange'))
-   #  display(segmented)
-   #  coord.mtx <- RSAGA::grid.to.xyz(cmask)
-   #  filter <- filter(coord.mtx,z>0)
-   #  for(u in 1:dim(cell_img)[4]){
-   #    filter.mtx <- subset(filter,z==u)
-   #    xmin <- min(filter.mtx$x)-1
-   #    xmax <- max(filter.mtx$x)+1
-   #    ymin <- min(filter.mtx$y)-1
-   #    ymax <- max(filter.mtx$y)+1
-   #    cell.coord[nrow(cell.coord) + 1, ] <- c(xmin, xmax, ymin, ymax)
-   #    rm(filter.mtx)
-   #  }
-   #  rm(coord.mtx)
-   #  rm(filter)
-   #}
-   #total_results <<- cbind(total_results,cell.coord)
+    for(y in 1:dim(total_results)[1]){
+      cell_row_data <- total_results[y,]
+      if(cell_row_data$prediction_results == "UNDETERMINED"){
+        total_results$ID.Estimate[y] <<- "Undetermined"
+        total_results$prediction_results[y] <<- "ESTIMATE"
+      } else{}
+    }
+
+    for(y in 1:dim(total_results)[1]){
+      cell_row_data <- total_results[y,]
+      if(cell_row_data$prediction_results == "NEGATIVE"){
+        total_results$ID.Estimate[y] <<- "Unknown"
+        total_results$prediction_results[y] <<- "POSITIVE"
+      } else{}
+    }
 
     test_ID.input <<- subset(total_results,file_ID==image_names[[1]])
     test_img <- image_load(images[[1]],target_size = c(1024,1024))
@@ -685,32 +623,57 @@ server_main = function(input, output, session) {
 
     GeomRect$draw_key = draw_key_polygon3
 
-    estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
-                                         aes(xmin = xmin, xmax = xmax,
-                                             ymin = ymin, ymax = ymax,
-                                             fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
-                                         alpha = .20, linewidth = 0.15, inherit.aes = FALSE)+
-      scale_colour_manual(name="ID Prediction",
-                          values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-      scale_fill_manual(name="ID Prediction",
-                        values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-      scale_linetype_manual(name="Prediction Results",
-                            labels = c("Estimate", "Positive"),
-                            values = c(2,1))+
-      guides(linetype = guide_legend(override.aes = list(
-        linetype = c("dashed", "solid"),
-        color = c("black","black"),
-        fill = c(NA,NA)))) +
-      theme(legend.text = element_text(size=3),
-            legend.title = element_text(size=3),
-            legend.key.size = unit(0.25,"cm"),
-            legend.spacing.y = unit(1, 'mm'),
-            plot.margin=unit(c(0,0.35,0,0),"cm"),
-            #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
-            #                          colour = c("black","black","black",NA)),
-            legend.position = "right")
+    if(length(unique(test_ID.input$prediction_results))==2){
+      estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
+                                            aes(xmin = xmin, xmax = xmax,
+                                                ymin = ymin, ymax = ymax,
+                                                fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                            alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+        scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+        scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+        scale_linetype_manual(name="Prediction Results",
+                              labels = c("Estimate", "Positive"),
+                              values = c(2,1))+
+        guides(linetype = guide_legend(override.aes = list(
+          linetype = c("dashed", "solid"),
+          color = c("black","black"),
+          fill = c(NA,NA)))) +
+        theme(legend.text = element_text(size=3),
+              legend.title = element_text(size=3),
+              legend.key.size = unit(0.25,"cm"),
+              legend.spacing.y = unit(1, 'mm'),
+              plot.margin=unit(c(0,0.35,0,0),"cm"),
+              #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+              #                          colour = c("black","black","black",NA)),
+              legend.position = "right")
 
-    estimate_list <<- list(estimate_plot)
+      estimate_list <<- list(estimate_plot)
+    } else {
+      estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
+                                            aes(xmin = xmin, xmax = xmax,
+                                                ymin = ymin, ymax = ymax,
+                                                fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                            alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+        scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+        scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+        scale_linetype_manual(name="Prediction Results",
+                              labels = c("Positive"),
+                              values = c(1))+
+        guides(linetype = guide_legend(override.aes = list(
+          linetype = c("solid"),
+          color = c("black"),
+          fill = c(NA)))) +
+        theme(legend.text = element_text(size=3),
+              legend.title = element_text(size=3),
+              legend.key.size = unit(0.25,"cm"),
+              legend.spacing.y = unit(1, 'mm'),
+              plot.margin=unit(c(0,0.35,0,0),"cm"),
+              #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
+              #                          colour = c("black","black","black",NA)),
+              legend.position = "right")
+
+      estimate_list <<- list(estimate_plot)
+    }
 
     for(r in 2:length(read_images)) {
       test_ID.input <<- subset(total_results,file_ID==image_names[[r]])
@@ -736,34 +699,55 @@ server_main = function(input, output, session) {
 
       GeomRect$draw_key = draw_key_polygon3
 
-      estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
-                                           aes(xmin = xmin, xmax = xmax,
-                                               ymin = ymin, ymax = ymax,
-                                               fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
-                                           alpha = .20, linewidth = 0.15, inherit.aes = FALSE)+
-        scale_colour_manual(name="ID Prediction",
-                            values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-        scale_fill_manual(name="ID Prediction",
-                          values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-        scale_linetype_manual(name="Prediction Results",
-                              labels = c("Estimate", "Positive"),
-                              values = c(2,1))+
-        guides(linetype = guide_legend(override.aes = list(
-          linetype = c("dashed", "solid"),
-          color = c("black","black"),
-          fill = c(NA,NA)))) +
-        theme(legend.text = element_text(size=3),
-              legend.title = element_text(size=3),
-              legend.key.size = unit(0.25,"cm"),
-              legend.spacing.y = unit(1, 'mm'),
-              plot.margin=unit(c(0,0.35,0,0),"cm"),
-              #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
-              #                          colour = c("black","black","black",NA)),
-              legend.position = "right")
+      if(length(unique(test_ID.input$prediction_results))==2){
+        estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
+                                              aes(xmin = xmin, xmax = xmax,
+                                                  ymin = ymin, ymax = ymax,
+                                                  fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                              alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+          scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+          scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+          scale_linetype_manual(name="Prediction Results",
+                                labels = c("Estimate", "Positive"),
+                                values = c(2,1))+
+          guides(linetype = guide_legend(override.aes = list(
+            linetype = c("dashed", "solid"),
+            color = c("black","black"),
+            fill = c(NA,NA)))) +
+          theme(legend.text = element_text(size=3),
+                legend.title = element_text(size=3),
+                legend.key.size = unit(0.25,"cm"),
+                legend.spacing.y = unit(1, 'mm'),
+                plot.margin=unit(c(0,0.35,0,0),"cm"),
+                legend.position = "right")
 
-      estimate_list1 <- list(estimate_plot)
+        estimate_list1 <- list(estimate_plot)
+        estimate_list <<- append(estimate_list,estimate_list1)
+      } else{
+        estimate_plot <<- test_img1+geom_rect(data = test_ID.input,
+                                              aes(xmin = xmin, xmax = xmax,
+                                                  ymin = ymin, ymax = ymax,
+                                                  fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                              alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
+          scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+          scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+          scale_linetype_manual(name="Prediction Results",
+                                labels = c("Positive"),
+                                values = c(1))+
+          guides(linetype = guide_legend(override.aes = list(
+            linetype = c("solid"),
+            color = c("black"),
+            fill = c(NA)))) +
+          theme(legend.text = element_text(size=3),
+                legend.title = element_text(size=3),
+                legend.key.size = unit(0.25,"cm"),
+                legend.spacing.y = unit(1, 'mm'),
+                plot.margin=unit(c(0,0.35,0,0),"cm"),
+                legend.position = "right")
 
-      estimate_list <<- append(estimate_list,estimate_list1)
+        estimate_list1 <- list(estimate_plot)
+        estimate_list <<- append(estimate_list,estimate_list1)
+      }
     }
     shinyCatch({message("***prediction images generated***")}, prefix = '', position = "bottom-left")
 
@@ -830,42 +814,56 @@ server_main = function(input, output, session) {
         test_img <- image_load(images[[h]],target_size = c(1024,1024))
         img_array <- test_img %>% image_to_array() %>% '/'(255)
         rgb.imgs <- Image(img_array,colormode = Color)
-        ex_ID.input1 <- subset(total_results,file_ID==image_names[[h]])
+        ex_ID.input1 <<- subset(total_results,file_ID==image_names[[h]])
         test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
 
-        #estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
-        #                                     aes(xmin = xmin, xmax = xmax,
-        #                                         ymin = ymin, ymax = ymax,
-        #                                         fill = ID.Estimate, colour = ID.Estimate),
-        #                                     alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-        #  theme(legend.position = "bottom")
+        if(length(unique(ex_ID.input1$prediction_results))==2){
+          estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+                                               aes(xmin = xmin, xmax = xmax,
+                                                   ymin = ymin, ymax = ymax,
+                                                   fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                               alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_linetype_manual(name="Prediction Results",
+                                  labels = c("Estimate", "Positive"),
+                                  values = c(2,1))+
+            guides(linetype = guide_legend(override.aes = list(
+              linetype = c("dashed", "solid"),
+              color = c("black","black"),
+              fill = c(NA,NA)))) +
+            theme(legend.text = element_text(size=10),
+                  legend.title = element_text(size=10),
+                  legend.key.size = unit(0.75,"cm"),
+                  legend.spacing.y = unit(5, 'mm'),
+                  legend.position = "bottom")
 
-        estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
-                                             aes(xmin = xmin, xmax = xmax,
-                                                 ymin = ymin, ymax = ymax,
-                                                 fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
-                                             alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-          scale_colour_manual(name="ID Prediction",
-                              values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-          scale_fill_manual(name="ID Prediction",
-                            values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-          scale_linetype_manual(name="Prediction Results",
-                                labels = c("Estimate", "Positive"),
-                                values = c(2,1))+
-          guides(linetype = guide_legend(override.aes = list(
-            linetype = c("dashed", "solid"),
-            color = c("black", "black"),
-            fill = c(NA,NA)))) +
-          theme(legend.text = element_text(size=10),
-                legend.title = element_text(size=10),
-                legend.key.size = unit(0.75,"cm"),
-                legend.spacing.y = unit(5, 'mm'),
-                #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
-                #                          colour = c("black","black","black",NA)),
-                legend.position = "bottom")
+          export_image<-paste0(sub(".jpg", replacement = "", x=image_names[[h]]),"_predict.png")
+          ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+        } else{
+          estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+                                               aes(xmin = xmin, xmax = xmax,
+                                                   ymin = ymin, ymax = ymax,
+                                                   fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
+                                               alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_linetype_manual(name="Prediction Results",
+                                  labels = c("Positive"),
+                                  values = c(1))+
+            guides(linetype = guide_legend(override.aes = list(
+              linetype = c("solid"),
+              color = c("black"),
+              fill = c(NA)))) +
+            theme(legend.text = element_text(size=10),
+                  legend.title = element_text(size=10),
+                  legend.key.size = unit(0.75,"cm"),
+                  legend.spacing.y = unit(5, 'mm'),
+                  legend.position = "bottom")
 
-        export_image<-paste0(sub(".jpg", replacement = "", x=image_names[[h]]),"_predict.png")
-        ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+          export_image<-paste0(sub(".jpg", replacement = "", x=image_names[[h]]),"_predict.png")
+          ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+        }
       }
     } else if (grepl("(?i).tif", image_names[[2]])==TRUE){
       for (h in 1:length(cell_seg)) {
@@ -905,42 +903,56 @@ server_main = function(input, output, session) {
         test_img <- image_load(images[[h]],target_size = c(1024,1024))
         img_array <- test_img %>% image_to_array() %>% '/'(255)
         rgb.imgs <- Image(img_array,colormode = Color)
-        ex_ID.input1 <- subset(total_results,file_ID==image_names[[h]])
+        ex_ID.input1 <<- subset(total_results,file_ID==image_names[[h]])
         test_img1 <- magick::image_ggplot(image_read(EBImage::flop(EBImage::rotate(rgb.imgs,90))))
 
-        #estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
-        #                                     aes(xmin = xmin, xmax = xmax,
-        #                                         ymin = ymin, ymax = ymax,
-        #                                         fill = ID_estimate, colour = ID_estimate),
-        #                                     alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-        #  theme(legend.position = "bottom")
+        if(length(unique(ex_ID.input1$prediction_results))==2){
+          estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+                                               aes(xmin = xmin, xmax = xmax,
+                                                   ymin = ymin, ymax = ymax,
+                                                   fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                               alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_linetype_manual(name="Prediction Results",
+                                  labels = c("Estimate","Positive"),
+                                  values = c(2,1))+
+            guides(linetype = guide_legend(override.aes = list(
+              linetype = c("dashed", "solid"),
+              color = c("black","black"),
+              fill = c(NA,NA)))) +
+            theme(legend.text = element_text(size=10),
+                  legend.title = element_text(size=10),
+                  legend.key.size = unit(0.75,"cm"),
+                  legend.spacing.y = unit(5, 'mm'),
+                  legend.position = "bottom")
 
-        estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
-                                             aes(xmin = xmin, xmax = xmax,
-                                                 ymin = ymin, ymax = ymax,
-                                                 fill = ID.Estimate, colour = ID.Estimate, linetype = prediction_results),
-                                             alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-          scale_colour_manual(name="ID Prediction",
-                              values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-          scale_fill_manual(name="ID Prediction",
-                            values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'UNKNOWN' = "black"))+
-          scale_linetype_manual(name="Prediction Results",
-                                labels = c("Estimate", "Positive"),
-                                values = c(2,1))+
-          guides(linetype = guide_legend(override.aes = list(
-            linetype = c("dashed", "solid"),
-            color = c("black","black"),
-            fill = c(NA,NA)))) +
-          theme(legend.text = element_text(size=10),
-                legend.title = element_text(size=10),
-                legend.key.size = unit(0.75,"cm"),
-                legend.spacing.y = unit(5, 'mm'),
-                #legend.key = element_rect(linetype = c("solid","dashed","dotted","blank"),
-                #                          colour = c("black","black","black",NA)),
-                legend.position = "bottom")
+          export_image<-paste0(sub(".tif", replacement = "", x=image_names[[h]]),"_predict.png")
+          ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+        } else{
+          estimate_plot <- test_img1+geom_rect(data = ex_ID.input1,
+                                               aes(xmin = xmin, xmax = xmax,
+                                                   ymin = ymin, ymax = ymax,
+                                                   fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
+                                               alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_linetype_manual(name="Prediction Results",
+                                  labels = c("Positive"),
+                                  values = c(1))+
+            guides(linetype = guide_legend(override.aes = list(
+              linetype = c("solid"),
+              color = c("black"),
+              fill = c(NA)))) +
+            theme(legend.text = element_text(size=10),
+                  legend.title = element_text(size=10),
+                  legend.key.size = unit(0.75,"cm"),
+                  legend.spacing.y = unit(5, 'mm'),
+                  legend.position = "bottom")
 
-        export_image<-paste0(sub(".tif", replacement = "", x=image_names[[h]]),"_predict.png")
-        ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+          export_image<-paste0(sub(".tif", replacement = "", x=image_names[[h]]),"_predict.png")
+          ggsave(estimate_plot,filename = c(export_image),path=newpath,device = "png")
+        }
       }
     }
     shinyCatch({message("***data and images saved***")}, prefix = '', position = "bottom-left")
