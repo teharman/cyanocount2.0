@@ -85,29 +85,29 @@ main_data <- rbind(main_data1,main_data2)
 #Area
 area_summary <- summary(main_data$x.0.s.area)
 cell_area_avg <- area_summary[[4]]
-cell_area_1QR <- area_summary[[2]]
-cell_area_3QR <- area_summary[[5]]
 cell_area_std <- as.numeric(sd(main_data$x.0.s.area,na.rm=TRUE))
+cell_area_2std1 <- cell_area_avg - 2*(cell_area_std)
+cell_area_2std2 <- cell_area_avg + 2*(cell_area_std)
 
 #Perimeter
 perimeter_summary <- summary(main_data$x.0.s.perimeter)
 cell_peri_avg <- perimeter_summary[[4]]
-cell_peri_1QR <- perimeter_summary[[2]]
-cell_peri_3QR <- perimeter_summary[[5]]
 cell_peri_std <- as.numeric(sd(main_data$x.0.s.perimeter,na.rm=TRUE))
+cell_peri_2std1 <- cell_peri_avg - 2*(cell_peri_std)
+cell_peri_2std2 <- cell_peri_avg + 2*(cell_peri_std)
 
 #Radius
 radius_summary <- summary(main_data$x.0.s.radius.mean)
 cell_radius_avg <- radius_summary[[4]]
-cell_radius_1QR <- radius_summary[[2]]
-cell_radius_3QR <- radius_summary[[5]]
 cell_radius_std <- as.numeric(sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
+cell_radius_2std1 <- cell_radius_avg - 2*(cell_radius_std)
+cell_radius_2std2 <- cell_radius_avg + 2*(cell_radius_std)
 
 #Compile 20X Data
 Main_Shape_Data <- data.frame(Genera = character(0),Objective = character(0),Data.Type=character(0),Average=numeric(0),Standard.Dev=numeric(0),SD_Minus2=numeric(0),SD_Plus2=numeric(0))
-Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Dolichospermum','20X','Area',cell_area_avg,cell_area_std,cell_area_1QR,cell_area_3QR)
-Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Dolichospermum','20X','Perimeter',cell_peri_avg,cell_peri_std,cell_peri_1QR,cell_peri_3QR)
-Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Dolichospermum','20X','Radius',cell_radius_avg,cell_radius_std,cell_radius_1QR,cell_radius_3QR)
+Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Dolichospermum','20X','Area',cell_area_avg,cell_area_std,cell_area_2std1,cell_area_2std2)
+Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Dolichospermum','20X','Perimeter',cell_peri_avg,cell_peri_std,cell_peri_2std1,cell_peri_2std2)
+Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Dolichospermum','20X','Radius',cell_radius_avg,cell_radius_std,cell_radius_2std1,cell_radius_2std2)
 
 rm(list = setdiff(ls(),c("Main_Shape_Data")))
 
@@ -198,28 +198,28 @@ main_data <- rbind(main_data1,main_data2)
 #Area
 area_summary <- summary(main_data$x.0.s.area)
 cell_area_avg <- area_summary[[4]]
-cell_area_1QR <- area_summary[[2]]
-cell_area_3QR <- area_summary[[5]]
 cell_area_std <- as.numeric(sd(main_data$x.0.s.area,na.rm=TRUE))
+cell_area_2std1 <- cell_area_avg - 2*(cell_area_std)
+cell_area_2std2 <- cell_area_avg + 2*(cell_area_std)
 
 #Perimeter
 perimeter_summary <- summary(main_data$x.0.s.perimeter)
 cell_peri_avg <- perimeter_summary[[4]]
-cell_peri_1QR <- perimeter_summary[[2]]
-cell_peri_3QR <- perimeter_summary[[5]]
 cell_peri_std <- as.numeric(sd(main_data$x.0.s.perimeter,na.rm=TRUE))
+cell_peri_2std1 <- cell_peri_avg - 2*(cell_peri_std)
+cell_peri_2std2 <- cell_peri_avg + 2*(cell_peri_std)
 
 #Radius
 radius_summary <- summary(main_data$x.0.s.radius.mean)
 cell_radius_avg <- radius_summary[[4]]
-cell_radius_1QR <- radius_summary[[2]]
-cell_radius_3QR <- radius_summary[[5]]
 cell_radius_std <- as.numeric(sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
+cell_radius_2std1 <- cell_radius_avg - 2*(cell_radius_std)
+cell_radius_2std2 <- cell_radius_avg + 2*(cell_radius_std)
 
 #Compile 20X Data
-Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Area',cell_area_avg,cell_area_std,cell_area_1QR,cell_area_3QR)
-Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Perimeter',cell_peri_avg,cell_peri_std,cell_peri_1QR,cell_peri_3QR)
-Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Radius',cell_radius_avg,cell_radius_std,cell_radius_1QR,cell_radius_3QR)
+Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Area',cell_area_avg,cell_area_std,cell_area_2std1,cell_area_2std2)
+Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Perimeter',cell_peri_avg,cell_peri_std,cell_peri_2std1,cell_peri_2std2)
+Main_Shape_Data[nrow(Main_Shape_Data) + 1, ] <- c('Microcystis','20X','Radius',cell_radius_avg,cell_radius_std,cell_radius_2std1,cell_radius_2std2)
 
 rm(list = setdiff(ls(),c("Main_Shape_Data")))
 
