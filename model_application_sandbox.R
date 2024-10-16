@@ -31,7 +31,7 @@ library(spsComps)
 library(stringr)
 library(pbapply)
 
-img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/Pipeline_Test/AccuScope/Batch_01/")
+img_dir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/Pipeline_Test/OMAX/")
 
 images_list <- data.frame(image_names = character(0))
 images <- list.files(img_dir, full.name = T)
@@ -59,7 +59,7 @@ for (z in 2:length(read_images)){
   mask_main <- append(mask_main, mask)
 }
 
-EBImage::display(mask_main[[7]])
+EBImage::display(mask_main[[1]])
 
 shape_model <- load_model_tf('./models/shape_model/shape_model01/', custom_objects = NULL, compile = TRUE)
 predict_model <- load_model_tf('./models/ID_prediction/ID_model_02mod/', custom_objects = NULL, compile = TRUE)
