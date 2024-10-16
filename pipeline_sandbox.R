@@ -629,8 +629,8 @@ server_main = function(input, output, session) {
                                                 ymin = ymin, ymax = ymax,
                                                 fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                             alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
-        scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-        scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+        scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+        scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
         scale_linetype_manual(name="Prediction Results",
                               labels = c("Estimate", "Positive"),
                               values = c(2,1))+
@@ -654,8 +654,8 @@ server_main = function(input, output, session) {
                                                 ymin = ymin, ymax = ymax,
                                                 fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                             alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
-        scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-        scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+        scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+        scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
         scale_linetype_manual(name="Prediction Results",
                               labels = c("Positive"),
                               values = c(1))+
@@ -705,8 +705,8 @@ server_main = function(input, output, session) {
                                                   ymin = ymin, ymax = ymax,
                                                   fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                               alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
-          scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-          scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+          scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+          scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
           scale_linetype_manual(name="Prediction Results",
                                 labels = c("Estimate", "Positive"),
                                 values = c(2,1))+
@@ -729,8 +729,8 @@ server_main = function(input, output, session) {
                                                   ymin = ymin, ymax = ymax,
                                                   fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                               alpha = .20, linewidth = 0.25, inherit.aes = FALSE)+
-          scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-          scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+          scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+          scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
           scale_linetype_manual(name="Prediction Results",
                                 labels = c("Positive"),
                                 values = c(1))+
@@ -823,8 +823,8 @@ server_main = function(input, output, session) {
                                                    ymin = ymin, ymax = ymax,
                                                    fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                                alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
             scale_linetype_manual(name="Prediction Results",
                                   labels = c("Estimate", "Positive"),
                                   values = c(2,1))+
@@ -846,8 +846,8 @@ server_main = function(input, output, session) {
                                                    ymin = ymin, ymax = ymax,
                                                    fill = ID.Estimate, colour = ID.Estimate,linetype = prediction_results),
                                                alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
             scale_linetype_manual(name="Prediction Results",
                                   labels = c("Positive"),
                                   values = c(1))+
@@ -912,8 +912,8 @@ server_main = function(input, output, session) {
                                                    ymin = ymin, ymax = ymax,
                                                    fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
                                                alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
             scale_linetype_manual(name="Prediction Results",
                                   labels = c("Estimate","Positive"),
                                   values = c(2,1))+
@@ -935,8 +935,8 @@ server_main = function(input, output, session) {
                                                    ymin = ymin, ymax = ymax,
                                                    fill = ID_estimate, colour = ID_estimate,linetype = prediction_results),
                                                alpha = .20, linewidth = 0.5, inherit.aes = FALSE)+
-            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
-            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "gold3",'Unknown' = "black"))+
+            scale_colour_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
+            scale_fill_manual(values = c('Dolichospermum' = "royalblue",'Microcystis' = "magenta",'Undetermined' = "darkred",'Unknown' = "black"))+
             scale_linetype_manual(name="Prediction Results",
                                   labels = c("Positive"),
                                   values = c(1))+
