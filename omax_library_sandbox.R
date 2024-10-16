@@ -122,38 +122,30 @@ mask_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/Low_Resolution_2X/Mic
 
 images <- list.files(img_dir, pattern = NULL, full.name = F)
 
-if(grepl("(?i).jpg", images[[2]])==TRUE){
-  images <- list.files(img_dir, pattern = "jpg", full.name = T)
-  images_names <- list.files(img_dir, pattern = "jpg", full.name = F)
+if(grepl("(?i).dng", images[[2]])==TRUE){
+  images <- list.files(img_dir, pattern = ".dng", full.name = T)
+  images_names <- list.files(img_dir, pattern = ".dng", full.name = F)
   imgNames <- paste0(images_names)
-  read_images <- lapply(images, jpeg::readJPEG)
-  img_transposed <- lapply(read_images,aperm,c(2,1,3))
-  names(images) <- imgNames
-} else if (grepl("(?i).tif", images[[2]])==TRUE){
-  images <- list.files(img_dir, pattern = "tif", full.name = T)
-  images_names <- list.files(img_dir, pattern = "tif", full.name = F)
-  imgNames <- paste0(images_names)
-  read_images <- lapply(images, tiff::readTIFF)
-  img_transposed <- lapply(read_images,aperm,c(2,1,3))
-  names(images) <- imgNames
-} else if (grepl("(?i).tiff", images[[2]])==TRUE){
-  images <- list.files(img_dir, pattern = "tif", full.name = T)
-  images_names <- list.files(img_dir, pattern = "tif", full.name = F)
-  imgNames <- paste0(images_names)
-  read_images <- lapply(images, tiff::readTIFF)
-  img_transposed <- lapply(read_images,aperm,c(2,1,3))
+  read_images <- lapply(images, magick::image_read)
+  #img_transposed <- lapply(read_images,aperm,c(2,1,3))
   names(images) <- imgNames
 }
 
+# Extract pixel data (use 'rgb' channel for color images)
+img_data <- lapply(read_images,image_data,channels='rgb')
+# Convert magick image data to a numeric array (rescale to [0,1] for EBImage)
+img_array <- lapply(img_data, function(x) as.numeric(strtoi(x, base = 16)) / 255)
+img_array <- lapply(img_array, array, dim = c(3,width,height))
+# The dimensions of the magick data are (channels, width, height), so we need to permute it
+# Rearrange the dimensions to (width, height, channels) for EBImage
+img_transposed <- lapply(img_array,aperm,c(2,3,1))
+
 #img number
 y<-1
-dim(img_transposed[[y]])
-height<-dim(img_transposed[[y]])[2]
+height<-image_info(read_images[[y]])[3]
 height<-as.numeric(height)
-width<-dim(img_transposed[[y]])[1]
+width<-image_info(read_images[[y]])[2]
 width<-as.numeric(width)
-
-#Separate blue channel from inp7t images
 rgb.imgs<-Image(img_transposed[[y]],colormode = Color)
 EBImage::display(rgb.imgs)
 
