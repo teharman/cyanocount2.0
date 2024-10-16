@@ -28,13 +28,13 @@ point_select <- function(){
       color = "black") +
       geom_point(data=seed.input,aes(x=.data$x_axis,
                                      y=.data$y_axis),
-                 color="red")
+                 color="red",size=0.75)
     return(displayed_image)
   }
 
 
 
-  myImgResource<-('./CyanoSCOPE_Logo_new.png')
+  myImgResource<-('./BloomSCOPE_Logo.png')
 
   ui1 <- fluidPage(
     useShinyjs(),

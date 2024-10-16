@@ -1,6 +1,8 @@
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(utils)
+library(stats)
 
 ####Dolichospermum 20X Data####
 
@@ -27,10 +29,10 @@ for(i in 1:length(Doli_F271_BatchFolders)){
     Image_folder_path <- paste0(Batch_Folder_path,Image_file_folder,"/")
     Image_csv_data <- list.files(Image_folder_path,pattern=".csv")
     main_csv_path <- paste0(Image_folder_path,Image_csv_data[[1]])
-    MAIN_CSV_DATA <- read.csv(main_csv_path,header=T)
-    MAIN_CSV_DATA <- MAIN_CSV_DATA %>% dplyr::select(.,x.0.s.area,
-                                                     x.0.s.perimeter,
-                                                     x.0.s.radius.mean)
+    MAIN_CSV_DATA <- utils::read.csv(main_csv_path,header=T)
+    MAIN_CSV_DATA <- dplyr::select(MAIN_CSV_DATA,x.0.s.area,
+                                                 x.0.s.perimeter,
+                                                 x.0.s.radius.mean)
     csv_image_list <- list(MAIN_CSV_DATA)
     csv_batch <- append(csv_batch,csv_image_list)
     rm(csv_image_list)
@@ -63,10 +65,10 @@ for(i in 1:length(Doli_F199_BatchFolders)){
     Image_folder_path <- paste0(Batch_Folder_path,Image_file_folder,"/")
     Image_csv_data <- list.files(Image_folder_path,pattern=".csv")
     main_csv_path <- paste0(Image_folder_path,Image_csv_data[[1]])
-    MAIN_CSV_DATA <- read.csv(main_csv_path,header=T)
-    MAIN_CSV_DATA <- MAIN_CSV_DATA %>% dplyr::select(.,x.0.s.area,
-                                                     x.0.s.perimeter,
-                                                     x.0.s.radius.mean)
+    MAIN_CSV_DATA <- utils::read.csv(main_csv_path,header=T)
+    MAIN_CSV_DATA <- dplyr::select(MAIN_CSV_DATA,x.0.s.area,
+                                                 x.0.s.perimeter,
+                                                 x.0.s.radius.mean)
     csv_image_list <- list(MAIN_CSV_DATA)
     csv_batch <- append(csv_batch,csv_image_list)
     rm(csv_image_list)
@@ -85,21 +87,21 @@ main_data <- rbind(main_data1,main_data2)
 #Area
 area_summary <- summary(main_data$x.0.s.area)
 cell_area_avg <- area_summary[[4]]
-cell_area_std <- as.numeric(sd(main_data$x.0.s.area,na.rm=TRUE))
+cell_area_std <- as.numeric(stats::sd(main_data$x.0.s.area,na.rm=TRUE))
 cell_area_2std1 <- cell_area_avg - 2*(cell_area_std)
 cell_area_2std2 <- cell_area_avg + 2*(cell_area_std)
 
 #Perimeter
 perimeter_summary <- summary(main_data$x.0.s.perimeter)
 cell_peri_avg <- perimeter_summary[[4]]
-cell_peri_std <- as.numeric(sd(main_data$x.0.s.perimeter,na.rm=TRUE))
+cell_peri_std <- as.numeric(stats::sd(main_data$x.0.s.perimeter,na.rm=TRUE))
 cell_peri_2std1 <- cell_peri_avg - 2*(cell_peri_std)
 cell_peri_2std2 <- cell_peri_avg + 2*(cell_peri_std)
 
 #Radius
 radius_summary <- summary(main_data$x.0.s.radius.mean)
 cell_radius_avg <- radius_summary[[4]]
-cell_radius_std <- as.numeric(sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
+cell_radius_std <- as.numeric(stats::sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
 cell_radius_2std1 <- cell_radius_avg - 2*(cell_radius_std)
 cell_radius_2std2 <- cell_radius_avg + 2*(cell_radius_std)
 
@@ -135,10 +137,10 @@ for(i in 1:length(Micro_F192_BatchFolders)){
     Image_folder_path <- paste0(Batch_Folder_path,Image_file_folder,"/")
     Image_csv_data <- list.files(Image_folder_path,pattern=".csv")
     main_csv_path <- paste0(Image_folder_path,Image_csv_data[[1]])
-    MAIN_CSV_DATA <- read.csv(main_csv_path,header=T)
-    MAIN_CSV_DATA <- MAIN_CSV_DATA %>% dplyr::select(.,x.0.s.area,
-                                                     x.0.s.perimeter,
-                                                     x.0.s.radius.mean)
+    MAIN_CSV_DATA <- utils::read.csv(main_csv_path,header=T)
+    MAIN_CSV_DATA <- dplyr::select(MAIN_CSV_DATA,x.0.s.area,
+                                                 x.0.s.perimeter,
+                                                 x.0.s.radius.mean)
     csv_image_list <- list(MAIN_CSV_DATA)
     csv_batch <- append(csv_batch,csv_image_list)
     rm(csv_image_list)
@@ -176,10 +178,10 @@ for(i in 1:length(Micro_F108_BatchFolders)){
     Image_folder_path <- paste0(Batch_Folder_path,Image_file_folder,"/")
     Image_csv_data <- list.files(Image_folder_path,pattern=".csv")
     main_csv_path <- paste0(Image_folder_path,Image_csv_data[[1]])
-    MAIN_CSV_DATA <- read.csv(main_csv_path,header=T)
-    MAIN_CSV_DATA <- MAIN_CSV_DATA %>% dplyr::select(.,x.0.s.area,
-                                                     x.0.s.perimeter,
-                                                     x.0.s.radius.mean)
+    MAIN_CSV_DATA <- utils::read.csv(main_csv_path,header=T)
+    MAIN_CSV_DATA <- dplyr::select(MAIN_CSV_DATA,x.0.s.area,
+                                                 x.0.s.perimeter,
+                                                 x.0.s.radius.mean)
     csv_image_list <- list(MAIN_CSV_DATA)
     csv_batch <- append(csv_batch,csv_image_list)
     rm(csv_image_list)
@@ -198,21 +200,21 @@ main_data <- rbind(main_data1,main_data2)
 #Area
 area_summary <- summary(main_data$x.0.s.area)
 cell_area_avg <- area_summary[[4]]
-cell_area_std <- as.numeric(sd(main_data$x.0.s.area,na.rm=TRUE))
+cell_area_std <- as.numeric(stats::sd(main_data$x.0.s.area,na.rm=TRUE))
 cell_area_2std1 <- cell_area_avg - 2*(cell_area_std)
 cell_area_2std2 <- cell_area_avg + 2*(cell_area_std)
 
 #Perimeter
 perimeter_summary <- summary(main_data$x.0.s.perimeter)
 cell_peri_avg <- perimeter_summary[[4]]
-cell_peri_std <- as.numeric(sd(main_data$x.0.s.perimeter,na.rm=TRUE))
+cell_peri_std <- as.numeric(stats::sd(main_data$x.0.s.perimeter,na.rm=TRUE))
 cell_peri_2std1 <- cell_peri_avg - 2*(cell_peri_std)
 cell_peri_2std2 <- cell_peri_avg + 2*(cell_peri_std)
 
 #Radius
 radius_summary <- summary(main_data$x.0.s.radius.mean)
 cell_radius_avg <- radius_summary[[4]]
-cell_radius_std <- as.numeric(sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
+cell_radius_std <- as.numeric(stats::sd(main_data$x.0.s.radius.mean,na.rm=TRUE))
 cell_radius_2std1 <- cell_radius_avg - 2*(cell_radius_std)
 cell_radius_2std2 <- cell_radius_avg + 2*(cell_radius_std)
 
@@ -225,4 +227,4 @@ rm(list = setdiff(ls(),c("Main_Shape_Data")))
 
 save_path <- paste0(getwd(),"/")
 csv_save <- paste0(paste("Cell_Features_Data"),".csv")
-write.csv(Main_Shape_Data,paste0(save_path,csv_save))
+utils::write.csv(Main_Shape_Data,paste0(save_path,csv_save))
