@@ -229,7 +229,7 @@ epochs<-6
 
 path_test<-"C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/Draft_Model/models/ID_predict_model/test"
 
-test_data_gen <- image_data_generator(rescale = 0.1/255)
+test_data_gen <- image_data_generator(rescale = 1/255)
 test_images <- flow_images_from_directory(path_test,
                                           test_data_gen,
                                           target_size = target_size,
@@ -268,28 +268,41 @@ predictions_test <- predictions %>%
   mutate(truth_idx = as.character(test_images$classes)) %>%
   left_join(indices, by = c("truth_idx" = "value"))
 
+#pred_analysis <- predictions_test %>%
+#  #mutate(img_id = seq(1:test_images$n)) %>%
+#  mutate(img_id = seq(1:dim(predictions)[1])) %>%
+#  gather(pred_lbl, y, Dolichospermum:Microcystis) %>%
+#  group_by(img_id) %>%
+#  filter(y == max(y)) %>%
+#  arrange(img_id) %>%
+#  group_by(key, n, pred_lbl) %>%
+#  count()
+
 pred_analysis <- predictions_test %>%
-  #mutate(img_id = seq(1:test_images$n)) %>%
   mutate(img_id = seq(1:dim(predictions)[1])) %>%
   gather(pred_lbl, y, Dolichospermum:Microcystis) %>%
   group_by(img_id) %>%
   filter(y == max(y)) %>%
+  mutate(correct = if_else(y >= 0.75, pred_lbl, "Low Estimate")) %>%
   arrange(img_id) %>%
-  group_by(key, n, pred_lbl) %>%
+  group_by(key, n, correct) %>%
   count()
 
-pred_analysis_false <- pred_analysis[c(2:3),]
+pred_analysis_false <- pred_analysis[c(2:5),]
 
 p <- pred_analysis %>%
   mutate(percentage_pred = nn / n * 100) %>%
-  ggplot(aes(x = key, y = pred_lbl,
+  ggplot(aes(x = key, y = correct,
              fill = percentage_pred,
              label = paste0(round(percentage_pred, 2),"%"))) +
-  geom_tile() +
+  geom_tile(color="black",size=1.5) +
+  theme_void() +
   scale_fill_continuous() +
   scale_fill_gradient(low = "white", high = "royalblue") +
+  scale_x_discrete(position = "top") +
+  scale_y_discrete(limit=c("Low Estimate","Microcystis","Dolichospermum"))+
   geom_text(color = "black",size=10) +
-  geom_text(data=pred_analysis_false,aes(x=key,y=pred_lbl,
+  geom_text(data=pred_analysis_false,aes(x=key,y=correct,
                                          fill=nn/n*100,
                                          label=paste0(round(nn/n*100,2),"%")),
             color="red",size=10)+
@@ -303,14 +316,14 @@ p <- pred_analysis %>%
     plot.margin=unit(c(1,1,1,1),"cm"),
     plot.title = element_text(size=35),
     plot.subtitle = element_text(size=20),
-    axis.title.x = element_text(size=25,vjust=-2),
-    axis.title.y = element_text(size=25,vjust=4),
-    axis.text.x = element_text(size=20),
-    axis.text.y = element_text(size=20,angle=45,hjust=1,vjust=-1),
+    axis.title.x = element_text(size=25,vjust=3),
+    axis.title.y = element_text(size=25,vjust=2,angle=90),
+    axis.text.x = element_text(size=20,vjust=2),
+    axis.text.y = element_text(size=20,angle=45,hjust=1),
     legend.text = element_text(size=20),
     legend.title = element_text(size=20))
 
-png("Predict_Model_Output_03.png", height = 25, width = 30, units = 'cm', res = 300)
+png("Predict_Model_Output_03.png", height = 25, width = 25, units = 'cm', res = 300)
 p
 dev.off()
 
