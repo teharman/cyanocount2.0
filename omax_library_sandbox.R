@@ -114,11 +114,11 @@ single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/Low_Resolution_2X/Microcystis_F108/Batch_01/")
-image_savdir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/Low_Resolution_2X/Microcystis_F108/Batch_01/")
-image_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/Low_Resolution_2X/Microcystis_F108/Raw_Imgs/Batch_01/')
-mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/Low_Resolution_2X/Microcystis_F108/True_Mask/")
-mask_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/Low_Resolution_2X/Microcystis_F108/True_Mask/')
+img_dir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Batch_01/")
+image_savdir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Batch_02/")
+image_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Raw_Imgs/Batch_02/')
+mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/True_Mask/")
+mask_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/True_Mask/')
 
 images <- list.files(img_dir, pattern = NULL, full.name = F)
 
@@ -133,15 +133,14 @@ if(grepl("(?i).dng", images[[2]])==TRUE){
 
 # Extract pixel data (use 'rgb' channel for color images)
 img_data <- lapply(read_images,image_data,channels='rgb')
-# Convert magick image data to a numeric array (rescale to [0,1] for EBImage)
-img_array <- lapply(img_data, function(x) as.numeric(strtoi(x, base = 16)) / 255)
-img_array <- lapply(img_array, array, dim = c(3,width,height))
+# Convert img_data to a proper array if it's not already a 3D array
+img_data_numeric <- lapply(img_data,function(x) as.integer(x)/255)
 # The dimensions of the magick data are (channels, width, height), so we need to permute it
 # Rearrange the dimensions to (width, height, channels) for EBImage
-img_transposed <- lapply(img_array,aperm,c(2,3,1))
+img_transposed <- lapply(img_data_numeric,aperm,c(2,1,3))
 
 #img number
-y<-1
+y<-2
 height<-image_info(read_images[[y]])[3]
 height<-as.numeric(height)
 width<-image_info(read_images[[y]])[2]
@@ -154,10 +153,10 @@ grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 
 EBImage::display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 EBImage::display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.125)
+binary_img<-lapply(neg_imgs, binary, adj = 0.25)
 EBImage::display(binary_img[[y]])
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.1) #background intensity threshold adjustment
-img_watershed<-watershed_convert(imagesMapped[[y]],w=25,h=25,offset=0.001,areathresh=150,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
+img_watershed<-watershed_convert2(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=150,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
 EBImage::display(img_watershed)
 
 #Shiny UI cell selector
@@ -181,12 +180,8 @@ seed_img<-single_cell_convert(seed.mtx.img)
 ctmask<-opening(img_watershed>0.1,makeBrush(5,shape='disc'))
 cmask<-propagate(neg_imgs[[y]],seeds=seed_img,mask=ctmask,lambda = 10^1)
 EBImage::display(cmask)
-if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
-  mask_image1<-paste0(sub(".jpg", replacement = "", x=imgNames[[y]]),"_mask.png")
-} else if(grepl("(?i).tif", imgNames[[y]])==TRUE){
-  mask_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_mask.png")
-} else if(grepl("(?i).tiff", imgNames[[y]])==TRUE){
-  mask_image1<-paste0(sub(".tiff", replacement = "", x=imgNames[[y]]),"_mask.png")
+if(grepl("(?i).dng", imgNames[[y]])==TRUE){
+  mask_image1<-paste0(sub(".dng", replacement = "", x=imgNames[[y]]),"_mask.png")
 }
 writeImage(cmask,files = paste0(mask_savdir, mask_image1))
 writeImage(cmask,files = paste0(mask_backup, mask_image1))
@@ -205,7 +200,7 @@ remove_images<-c('FALSE')
 
 ####save cell images####
 
-if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
+if(grepl("(?i).dng", imgNames[[y]])==TRUE){
   if(remove_images == 'TRUE'){
     #Removal of problematic images from output of 'image_select' Shiny UI
     st_blob_rm<-st_blob[,,-image_num2]
@@ -224,8 +219,8 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     features.img2<-features.img1 %>% filter(!row_number() %in% image_num2)
 
     #blob st img save
-    Index_blob<-paste0(sub(".jpg", replacement = "blob_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".jpg", replacement = "/", x=imgNames[[y]]))
+    Index_blob<-paste0(sub(".dng", replacement = "blob_", x=imgNames[[y]]))
+    Index1<-paste0(sub(".dng", replacement = "/", x=imgNames[[y]]))
     newpath<-file.path(image_savdir,Index1,"")
     if(!dir.exists(newpath)){
       dir.create(newpath)
@@ -236,9 +231,9 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     }
     for(k in 1:dim(st_blob_rm)[3]) {
       st_imgs_blob<-st_blob_rm[, , k]
-      analyzed_image1<-paste0(sub(".jpg", replacement = "", x=imgNames[[y]]),"_blob_frame (")
-      analyzed_image2<-paste0(sub(".jpg", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".jpg", replacement = "", x=analyzed_image2),").tiff")
+      analyzed_image1<-paste0(sub(".dng", replacement = "", x=imgNames[[y]]),"_blob_frame (")
+      analyzed_image2<-paste0(sub(".dng", replacement = "", x=analyzed_image1),k)
+      analyzed_image3<-paste0(sub(".dng", replacement = "", x=analyzed_image2),").tiff")
       features.blob2$frame_num[k]<-cbind(k)
       writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
       writeImage(st_imgs_blob,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
@@ -248,8 +243,8 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     write.csv(features.blob2, paste0(newpath1, csv_save))
 
     #grey st img save
-    Index_grey<-paste0(sub(".jpg", replacement = "color_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".jpg", replacement = "/", x=imgNames[[y]]))
+    Index_grey<-paste0(sub(".dng", replacement = "color_", x=imgNames[[y]]))
+    Index1<-paste0(sub(".dng", replacement = "/", x=imgNames[[y]]))
     newpath<-file.path(image_savdir,Index1,"")
     if(!dir.exists(newpath)){
       dir.create(newpath)
@@ -260,9 +255,9 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     }
     for(k in 1:dim(st_img_rm)[4]) {
       st_imgs_color<-st_img_rm[, , , k]
-      analyzed_image1<-paste0(sub(".jpg", replacement = "", x=imgNames[[y]]),"_color_frame (")
-      analyzed_image2<-paste0(sub(".jpg", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".jpg", replacement = "", x=analyzed_image2),").tiff")
+      analyzed_image1<-paste0(sub(".dng", replacement = "", x=imgNames[[y]]),"_color_frame (")
+      analyzed_image2<-paste0(sub(".dng", replacement = "", x=analyzed_image1),k)
+      analyzed_image3<-paste0(sub(".dng", replacement = "", x=analyzed_image2),").tiff")
       features.img2$frame_num[k]<-cbind(k)
       writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
       writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
@@ -280,8 +275,8 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     features.img1<-cbind(features.blob,frame_num=NA)
 
     #blob st img save
-    Index_blob<-paste0(sub(".jpg", replacement = "blob_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".jpg", replacement = "/", x=imgNames[[y]]))
+    Index_blob<-paste0(sub(".dng", replacement = "blob_", x=imgNames[[y]]))
+    Index1<-paste0(sub(".dng", replacement = "/", x=imgNames[[y]]))
     newpath<-file.path(image_savdir,Index1,"")
     if(!dir.exists(newpath)){
       dir.create(newpath)
@@ -292,9 +287,9 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     }
     for(k in 1:dim(st_blob)[3]) {
       st_imgs_blob<-st_blob[, , k]
-      analyzed_image1<-paste0(sub(".jpg", replacement = "", x=imgNames[[y]]),"_blob_frame (")
-      analyzed_image2<-paste0(sub(".jpg", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".jpg", replacement = "", x=analyzed_image2),").tiff")
+      analyzed_image1<-paste0(sub(".dng", replacement = "", x=imgNames[[y]]),"_blob_frame (")
+      analyzed_image2<-paste0(sub(".dng", replacement = "", x=analyzed_image1),k)
+      analyzed_image3<-paste0(sub(".dng", replacement = "", x=analyzed_image2),").tiff")
       features.blob1$frame_num[k]<-cbind(k)
       writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
       writeImage(st_imgs_blob,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
@@ -304,8 +299,8 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     write.csv(features.blob1, paste0(newpath1, csv_save))
 
     #grey st img save
-    Index_grey<-paste0(sub(".jpg", replacement = "color_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".jpg", replacement = "/", x=imgNames[[y]]))
+    Index_grey<-paste0(sub(".dng", replacement = "color_", x=imgNames[[y]]))
+    Index1<-paste0(sub(".dng", replacement = "/", x=imgNames[[y]]))
     newpath<-file.path(image_savdir,Index1,"")
     if(!dir.exists(newpath)){
       dir.create(newpath)
@@ -316,252 +311,9 @@ if(grepl("(?i).jpg", imgNames[[y]])==TRUE){
     }
     for(k in 1:dim(st_img)[4]) {
       st_imgs_color<-st_img[, , , k]
-      analyzed_image1<-paste0(sub(".jpg", replacement = "", x=imgNames[[y]]),"_color_frame (")
-      analyzed_image2<-paste0(sub(".jpg", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".jpg", replacement = "", x=analyzed_image2),").tiff")
-      features.img1$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
-    }
-    csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-    write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.img1, paste0(newpath1, csv_save))
-  }
-} else if(grepl("(?i).tiff", imgNames[[y]])==TRUE){
-  if(remove_images == 'TRUE'){
-    #Removal of problematic images from output of 'image_select' Shiny UI
-    st_blob_rm<-st_blob[,,-image_num2]
-    st_img_rm<-st_img[,,,-image_num2]
-
-    ####Create features and export images####
-    features.data.blob<-computeFeatures(cmask,img_watershed)
-    features.data.img<-computeFeatures(cmask,rgb.imgs)
-    features.blob<-as.data.frame(features.data.blob)
-    features.img<-as.data.frame(features.data.img)
-    features.blob1<-cbind(features.blob,frame_num=NA)
-    features.img1<-cbind(features.blob,frame_num=NA)
-
-    #removal of rows from the shiny_select UI
-    features.blob2<-features.blob1 %>%  filter(!row_number() %in% image_num2)
-    features.img2<-features.img1 %>% filter(!row_number() %in% image_num2)
-
-    #blob st img save
-    Index_blob<-paste0(sub(".tif", replacement = "blob_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_blob_rm)[3]) {
-      st_imgs_blob<-st_blob_rm[, , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_blob_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.blob2$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_blob,files = paste0(newpath1, analyzed_image3),compression=c('LZW'))
-    }
-    csv_save<-paste0(paste(Index_blob,Sys.Date()),".csv")
-    write.csv(features.blob2, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.blob2, paste0(newpath1, csv_save))
-
-    #grey st img save
-    Index_grey<-paste0(sub(".tif", replacement = "color_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_img_rm)[4]) {
-      st_imgs_color<-st_img_rm[, , , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_color_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.img2$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c('LZW'))
-    }
-    csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-    write.csv(features.img2, paste0(newpath, csv_save)) #Change this CSV file name
-  } else{
-    ####Create features and export images####
-    features.data.blob<-computeFeatures(cmask,img_watershed)
-    features.data.img<-computeFeatures(cmask,grey_imgs[[y]])
-    features.blob<-as.data.frame(features.data.blob)
-    features.img<-as.data.frame(features.data.img)
-    features.blob1<-cbind(features.blob,frame_num=NA)
-    features.img1<-cbind(features.blob,frame_num=NA)
-
-    #blob st img save
-    Index_blob<-paste0(sub(".tif", replacement = "blob_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_blob)[3]) {
-      st_imgs_blob<-st_blob[, , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_blob_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.blob1$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_blob,files = paste0(newpath1, analyzed_image3),compression=c('LZW'))
-    }
-    csv_save<-paste0(paste(Index_blob,Sys.Date()),".csv")
-    write.csv(features.blob1, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.blob1, paste0(newpath1, csv_save))
-
-    #grey st img save
-    Index_grey<-paste0(sub(".tif", replacement = "color_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_img)[4]) {
-      st_imgs_color<-st_img[, , , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_color_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.img1$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c('LZW'))
-    }
-    csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-    write.csv(features.img1, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.img1, paste0(newpath1, csv_save))
-  }
-} else if(grepl("(?i).tif", imgNames[[y]])==TRUE){
-  if(remove_images == 'TRUE'){
-    #Removal of problematic images from output of 'image_select' Shiny UI
-    st_blob_rm<-st_blob[,,-image_num2]
-    st_img_rm<-st_img[,,,-image_num2]
-
-    ####Create features and export images####
-    features.data.blob<-computeFeatures(cmask,img_watershed)
-    features.data.img<-computeFeatures(cmask,rgb.imgs)
-    features.blob<-as.data.frame(features.data.blob)
-    features.img<-as.data.frame(features.data.img)
-    features.blob1<-cbind(features.blob,frame_num=NA)
-    features.img1<-cbind(features.blob,frame_num=NA)
-
-    #removal of rows from the shiny_select UI
-    features.blob2<-features.blob1 %>%  filter(!row_number() %in% image_num2)
-    features.img2<-features.img1 %>% filter(!row_number() %in% image_num2)
-
-    #blob st img save
-    Index_blob<-paste0(sub(".tif", replacement = "blob_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_blob_rm)[3]) {
-      st_imgs_blob<-st_blob_rm[, , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_blob_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.blob2$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_blob,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
-    }
-    csv_save<-paste0(paste(Index_blob,Sys.Date()),".csv")
-    write.csv(features.blob2, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.blob2, paste0(newpath1, csv_save))
-
-    #grey st img save
-    Index_grey<-paste0(sub(".tif", replacement = "color_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_img_rm)[4]) {
-      st_imgs_color<-st_img_rm[, , , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_color_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.img2$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c('LZW'))
-    }
-    csv_save<-paste0(paste(Index_grey,Sys.Date()),".csv")
-    write.csv(features.img2, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.img2, paste0(newpath1, csv_save))
-  } else{
-    ####Create features and export images####
-    features.data.blob<-computeFeatures(cmask,img_watershed)
-    features.data.img<-computeFeatures(cmask,grey_imgs[[y]])
-    features.blob<-as.data.frame(features.data.blob)
-    features.img<-as.data.frame(features.data.img)
-    features.blob1<-cbind(features.blob,frame_num=NA)
-    features.img1<-cbind(features.blob,frame_num=NA)
-
-    #blob st img save
-    Index_blob<-paste0(sub(".tif", replacement = "blob_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_blob)[3]) {
-      st_imgs_blob<-st_blob[, , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_blob_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
-      features.blob1$frame_num[k]<-cbind(k)
-      writeImage(st_imgs_blob,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
-      writeImage(st_imgs_blob,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
-    }
-    csv_save<-paste0(paste(Index_blob,Sys.Date()),".csv")
-    write.csv(features.blob1, paste0(newpath, csv_save)) #Change this CSV file name
-    write.csv(features.blob1, paste0(newpath1, csv_save))
-
-    #grey st img save
-    Index_grey<-paste0(sub(".tif", replacement = "color_", x=imgNames[[y]]))
-    Index1<-paste0(sub(".tif", replacement = "/", x=imgNames[[y]]))
-    newpath<-file.path(image_savdir,Index1,"")
-    if(!dir.exists(newpath)){
-      dir.create(newpath)
-    }
-    newpath1<-file.path(image_backup,Index1,"")
-    if(!dir.exists(newpath1)){
-      dir.create(newpath1)
-    }
-    for(k in 1:dim(st_img)[4]) {
-      st_imgs_color<-st_img[, , , k]
-      analyzed_image1<-paste0(sub(".tif", replacement = "", x=imgNames[[y]]),"_color_frame (")
-      analyzed_image2<-paste0(sub(".tif", replacement = "", x=analyzed_image1),k)
-      analyzed_image3<-paste0(sub(".tif", replacement = "", x=analyzed_image2),").tiff")
+      analyzed_image1<-paste0(sub(".dng", replacement = "", x=imgNames[[y]]),"_color_frame (")
+      analyzed_image2<-paste0(sub(".dng", replacement = "", x=analyzed_image1),k)
+      analyzed_image3<-paste0(sub(".dng", replacement = "", x=analyzed_image2),").tiff")
       features.img1$frame_num[k]<-cbind(k)
       writeImage(st_imgs_color,files = paste0(newpath, analyzed_image3),compression=c("LZW"))
       writeImage(st_imgs_color,files = paste0(newpath1, analyzed_image3),compression=c("LZW"))
