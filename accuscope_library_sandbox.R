@@ -114,7 +114,7 @@ single_cell_convert <- function(x, w = 17, h = 17, offset = 0.001, areathresh = 
 gc()
 
 #Change directories/Import images
-img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/Raw_Imgs/Orient_3_Batch_06/")
+img_dir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F271/20X/Raw_Imgs/Batch_2/")
 image_savdir <- ("D:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/Raw_Imgs/Orient_3_Batch_06/")
 image_backup <- ('X:/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/Raw_Imgs/Orient_3_Batch_06/')
 mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/AccuScope/Dolichospermum_F199/20X/True_Mask/")
@@ -146,7 +146,7 @@ if(grepl("(?i).jpg", images[[2]])==TRUE){
 }
 
 #img number
-y<-1
+y<-2
 dim(img_transposed[[y]])
 height<-dim(img_transposed[[y]])[2]
 height<-as.numeric(height)
