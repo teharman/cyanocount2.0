@@ -8,7 +8,7 @@ image_select<-function(){
   jscode <- "shinyjs.closeWindow = function() { window.close(); }"
   image_number<<-data.frame(img_num=numeric(0))
   image_num1<<-textConnection('image_num2','wr',local=FALSE)
-  myImgResource<-('./CyanoSCOPE_Logo_new.png')
+  myImgResource<-('./BloomSCOPE_Logo.png')
 
   ui2 <- fluidPage(
     useShinyjs(),
