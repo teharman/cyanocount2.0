@@ -115,8 +115,8 @@ gc()
 
 #Change directories/Import images
 img_dir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Batch_01/")
-image_savdir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Batch_02/")
-image_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Raw_Imgs/Batch_02/')
+image_savdir <- ("D:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Batch_01/")
+image_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/Raw_Imgs/Batch_01/')
 mask_savdir <- ("C:/Users/Tyler.Harman/Desktop/cellcount_work/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/True_Mask/")
 mask_backup <- ('X:/CyanoSCOPE_imgs/OMAX/Google_Pixel_8Pro/High_Resolution_1X/20X/Microcystis_F108/True_Mask/')
 
@@ -140,7 +140,7 @@ img_data_numeric <- lapply(img_data,function(x) as.integer(x)/255)
 img_transposed <- lapply(img_data_numeric,aperm,c(2,1,3))
 
 #img number
-y<-2
+y<-5
 height<-image_info(read_images[[y]])[3]
 height<-as.numeric(height)
 width<-image_info(read_images[[y]])[2]
@@ -153,10 +153,10 @@ grey_imgs<-lapply(img_transposed, greyscale_convert, contrast = 4, brightness = 
 EBImage::display(grey_imgs[[y]])
 neg_imgs<-lapply(grey_imgs, img_neg)
 EBImage::display(neg_imgs[[y]])
-binary_img<-lapply(neg_imgs, binary, adj = 0.25)
+binary_img<-lapply(neg_imgs, binary, adj = 0.075)
 EBImage::display(binary_img[[y]])
 imagesMapped <- lapply(binary_img, mapped, threshold = 0.1) #background intensity threshold adjustment
-img_watershed<-watershed_convert2(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=150,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
+img_watershed<-watershed_convert(imagesMapped[[y]],w=50,h=50,offset=0.001,areathresh=500,tolerance = 0.6,ext = 4,removeEdgeCells=TRUE)
 EBImage::display(img_watershed)
 
 #Shiny UI cell selector
